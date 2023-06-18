@@ -1,0 +1,14 @@
+.env
+
+venv
+
+.idea
+idea
+
+dist
+
+media/
+logs/
+
+__pycache__/
+*/__pycache__/
