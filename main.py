@@ -1,13 +1,16 @@
 from fastapi import FastAPI
+from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from loguru import logger
+from starlette.responses import JSONResponse
+
 from src.accounts.router import router as router_accounts
 from src.posts.router import router as router_posts
 
 
 logger.add(
-    'logs/errors_log.log',
+    'src/logs/errors_log.log',
     format='{time} - {level} - {message}',
     level='ERROR',
     rotation='1 month',
@@ -31,6 +34,12 @@ app.add_middleware(
     allow_headers=["Content-Type", "Set-Cookie", "Access-Control-Allow-Headers", "Access-Control-Allow-Origin",
                    "Authorization"],
 )
+
+
+@app.exception_handler(Exception)
+async def unexpected_error_log(request, ex):
+    logger.error(ex)
+    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=None)
 
 
 @app.middleware('http')

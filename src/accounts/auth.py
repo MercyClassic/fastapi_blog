@@ -1,22 +1,13 @@
-import os
-from dotenv import load_dotenv
-from fastapi_users.authentication import CookieTransport, AuthenticationBackend
-from fastapi_users.authentication import JWTStrategy
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.accounts.manager import UserManager
+from src.accounts.models import User
 
 
-load_dotenv()
-
-cookie_transport = CookieTransport(cookie_name="jwt", cookie_max_age=3600)
-
-SECRET = os.getenv('JWT_SECRET')
-
-
-def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
-
-
-auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=cookie_transport,
-    get_strategy=get_jwt_strategy,
-)
+async def get_current_user(access_token: str, session: AsyncSession) -> User:
+    user_id = UserManager.get_user_id_from_access_token(access_token)
+    query = select(User).where(User.id == user_id)
+    result = await session.execute(query)
+    await session.commit()
+    user = result.scalar()
+    return user
