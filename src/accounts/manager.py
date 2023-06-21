@@ -25,9 +25,17 @@ class UserManager:
             input_password: str,
             session: AsyncSession
     ) -> int | Exception:
-        query = select(User).where(User.email == email).options(load_only(User.id, User.email, User.password))
+        query = select(User).where(User.email == email).options(
+            load_only(
+                User.id, User.email, User.password, User.is_active
+            ))
         result = await session.execute(query)
         user = result.scalar()
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Account is not verified'
+            )
         if user is not None and UserManager.check_password(
             input_password=input_password, password_from_db=user.password
         ):
@@ -47,7 +55,7 @@ class UserManager:
     @staticmethod
     def create_access_token(user_id: int) -> str:
         expires_delta = datetime.utcnow() + timedelta(minutes=60)
-        to_encode = {"exp": expires_delta, "sub": str(user_id)}
+        to_encode = {"exp": expires_delta, "sub": str(user_id), "is_admin": True}
         encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, ALGORITHM)
         return encoded_jwt
 
@@ -64,27 +72,49 @@ class UserManager:
         return encoded_jwt
 
     @staticmethod
-    def get_user_id_from_access_token(access_token: str) -> int:
+    def get_user_info_from_access_token(
+            access_token: str, without_exception: bool = False
+    ) -> dict | None:
+        bad_status_code = None
         try:
             access_token_data = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-            if datetime.fromtimestamp(access_token_data.get('exp')) < datetime.now():
+        except jwt.exceptions.ExpiredSignatureError:
+            bad_status_code = 401
+        except (
+                jwt.exceptions.InvalidSignatureError,
+                jwt.exceptions.DecodeError,
+        ):
+            bad_status_code = 403
+        if bad_status_code:
+            if without_exception:
+                return None
+            if bad_status_code == 401:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Token expired",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
-        except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return int(access_token_data.get('sub'))
+            elif bad_status_code == 403:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Could not validate credentials",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+        return {
+            'user_id': int(access_token_data.get('sub')),
+            'is_admin': access_token_data.get('is_admin')
+        }
 
     @staticmethod
     async def refresh_access_token(refresh_token: str, session: AsyncSession) -> dict:
         try:
             refresh_token_data = jwt.decode(refresh_token, JWT_REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+        except jwt.exceptions.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -99,12 +129,6 @@ class UserManager:
         if not check:
             await UserManager.delete_all_refresh_tokens(int(refresh_token_data.get('sub')), session)
 
-        if datetime.fromtimestamp(refresh_token_data.get('exp')) < datetime.now():
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token expired",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
         tokens = await UserManager.create_jwt_tokens(int(refresh_token_data.get('sub')), session)
         return tokens
 
@@ -121,11 +145,6 @@ class UserManager:
         await session.commit()
 
     @staticmethod
-    def after_create(email: str) -> None:
-        # here must be send email to verify (celery task)
-        pass
-
-    @staticmethod
     async def create_user(
             user_input_data: UserCreateSchema,
             session: AsyncSession
@@ -137,11 +156,16 @@ class UserManager:
             **user_data,
             password=hashed_password
         ).returning(User.id)
-        returned_user_id = await session.execute(stmt)
+        result = await session.execute(stmt)
         await session.commit()
-        user_data.setdefault('id', [i[0] for i in returned_user_id][0])
+        user_data.setdefault('id', result.one().id)
         UserManager.after_create(user_data.get('email'))
         return user_data
+
+    @staticmethod
+    def after_create(email: str) -> None:
+        # here must be send email to verify (celery task)
+        pass
 
     @staticmethod
     def make_password(value: str) -> str:

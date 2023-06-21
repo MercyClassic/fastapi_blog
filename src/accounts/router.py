@@ -1,24 +1,20 @@
-from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from pydantic import parse_obj_as
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import load_only
 from starlette import status
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-
-from src.accounts.auth import get_current_user
-from src.accounts.manager import UserManager
 from src.db.database import get_async_session
+
+from src.accounts import services
+from src.accounts.auth import get_current_user_info
+from src.accounts.manager import UserManager
 from src.accounts.schemas import (
     UserCreateSchema,
     UserReadBaseSchema,
-    UserReadSchemaForAdmin,
     AuthenticateSchema
 )
-from src.accounts.models import User
 
 
 router = APIRouter(
@@ -27,43 +23,22 @@ router = APIRouter(
 )
 
 
-@router.get('/')
+@router.get('')
 async def get_users(
-        request: Request,
         session: AsyncSession = Depends(get_async_session),
+        user_info: dict = Depends(get_current_user_info)
 ) -> JSONResponse:
-    user = await get_current_user(request.cookies.get('access_token'), session)
-    fields = [User.id, User.email, User.username]
-    if user.is_superuser:
-        fields += [User.registered_at, User.is_superuser, User.is_active, User.is_verified]
-    query = select(User).where(User.is_active == True).options(load_only(*fields))
-    result = await session.execute(query)
-    schema = UserReadSchemaForAdmin if user.is_superuser else UserReadBaseSchema
-    data = parse_obj_as(List[schema], result.scalars().all())
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(data)
-    )
+    response = await services.get_users(session, user_info)
+    return response
 
 
 @router.get('/{user_id}')
 async def get_user(
+        user_id: int,
         session: AsyncSession = Depends(get_async_session),
-        user_id: int = None,
 ) -> JSONResponse:
-    query = select(User).where(User.id == user_id).options(load_only(User.id, User.username, User.email))
-    result = await session.execute(query)
-    result = result.scalar()
-    if result is None:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content=None
-        )
-    data = parse_obj_as(UserReadBaseSchema, result)
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(data)
-    )
+    response = await services.get_user(user_id, session)
+    return response
 
 
 @router.post('/register')
