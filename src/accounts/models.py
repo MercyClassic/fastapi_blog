@@ -21,4 +21,4 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    # posts = relationship('Post', back_populates='user')
+    posts = relationship('Post', back_populates='user')

@@ -16,12 +16,14 @@ class Post(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('account.id'))
-    # user = relationship('User', back_populates='posts')
+    user = relationship('User', back_populates='posts')
     title: Mapped[str] = mapped_column(String(50), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     image: Mapped[str] = mapped_column(String(150), nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.utcnow)
     published: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    tags = relationship('Tag', secondary='post_tag', back_populates='posts')
 
 
 class Tag(Base):
@@ -31,13 +33,12 @@ class Tag(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.utcnow)
 
+    posts = relationship('Post', secondary='post_tag', back_populates='tags')
+
 
 class PostTag(Base):
-    __tablename__ = 'posttag'
+    __tablename__ = 'post_tag'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     post_id: Mapped[int] = mapped_column(Integer, ForeignKey('post.id'))
-    # post = relationship('Post', back_populates='tags')
     tag_id: Mapped[int] = mapped_column(Integer, ForeignKey('tag.id'))
-    # tag = relationship('Tag', back_populates='posts')
-

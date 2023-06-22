@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import load_only, joinedload, selectinload
 from starlette import status
 from starlette.exceptions import HTTPException
 
@@ -25,3 +25,10 @@ async def check_for_post_author(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=None
         )
+
+
+query_with_prefetched_user_and_tags = (
+    select(Post)
+    .options(joinedload(Post.user))
+    .options(selectinload(Post.tags))
+)

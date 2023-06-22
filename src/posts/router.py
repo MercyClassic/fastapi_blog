@@ -7,9 +7,8 @@ from src.posts import services
 from src.posts.schemas import (
     PostCreateSchema,
     PostUpdateSchema,
-    PostReadSchema,
     TagCreateSchema,
-    TagReadSchema
+    SetPostTagSchema
 )
 from src.utils.utils import get_pagination_params
 
@@ -20,6 +19,43 @@ router = APIRouter(
 )
 
 
+@router.get('/tags')
+async def get_tags(
+        session: AsyncSession = Depends(get_async_session),
+        pagination_params: dict = Depends(get_pagination_params)
+):
+    response = await services.get_tags(session, pagination_params)
+    return response
+
+
+@router.post('/tags')
+async def create_tag(
+        tag: TagCreateSchema,
+        session: AsyncSession = Depends(get_async_session)
+):
+    response = await services.create_tag(tag, session)
+    return response
+
+
+@router.get('/{post_id}/tags')
+async def get_post_tags(
+        post_id: int,
+        session: AsyncSession = Depends(get_async_session),
+        pagination_params: dict = Depends(get_pagination_params)
+):
+    response = await services.get_post_tags(post_id, session, pagination_params)
+    return response
+
+
+@router.post('/{post_id}/tags')
+async def set_post_tag(
+        data: SetPostTagSchema,
+        session: AsyncSession = Depends(get_async_session)
+):
+    response = await services.set_post_tag(data, session)
+    return response
+
+
 @router.post('')
 async def create_post(
         post: PostCreateSchema,
@@ -27,6 +63,16 @@ async def create_post(
         user_info: dict = Depends(get_current_user_info)
 ):
     response = await services.create_post(post.dict(), session, user_info)
+    return response
+
+
+@router.get('/user/{user_id}')
+async def get_user_posts(
+        user_id: int,
+        session: AsyncSession = Depends(get_async_session),
+        pagination_params: dict = Depends(get_pagination_params)
+):
+    response = await services.get_user_posts(user_id, session, pagination_params)
     return response
 
 
@@ -67,3 +113,5 @@ async def delete_post(
 ):
     response = await services.delete_post(post_id, session, user_info)
     return response
+
+

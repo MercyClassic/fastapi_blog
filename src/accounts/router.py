@@ -7,6 +7,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from src.db.database import get_async_session
 
+from src.utils.utils import get_pagination_params
 from src.accounts import services
 from src.accounts.auth import get_current_user_info
 from src.accounts.manager import UserManager
@@ -26,9 +27,10 @@ router = APIRouter(
 @router.get('')
 async def get_users(
         session: AsyncSession = Depends(get_async_session),
-        user_info: dict = Depends(get_current_user_info)
+        user_info: dict = Depends(get_current_user_info),
+        pagination_params: dict = Depends(get_pagination_params)
 ) -> JSONResponse:
-    response = await services.get_users(session, user_info)
+    response = await services.get_users(session, user_info, pagination_params)
     return response
 
 
