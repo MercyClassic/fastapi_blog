@@ -22,3 +22,4 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     posts = relationship('Post', back_populates='user')
+    tags = relationship('Tag', back_populates='user')

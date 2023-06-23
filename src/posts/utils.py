@@ -4,23 +4,24 @@ from sqlalchemy.orm import load_only, joinedload, selectinload
 from starlette import status
 from starlette.exceptions import HTTPException
 
-from src.posts.models import Post
+from src.posts.models import Post, Tag
 
 
-async def check_for_post_author(
-        post_id: int,
+async def check_for_author(
+        item_id: int,
+        model,
         session: AsyncSession,
         user_info: dict
 ) -> None:
-    query = select(Post).where(Post.id == post_id).options(load_only(Post.user_id))
-    post = await session.execute(query)
-    post_info = post.scalar()
-    if not post_info:
+    query = select(model).where(model.id == item_id).options(load_only(model.user_id))
+    instance = await session.execute(query)
+    instance_info = instance.scalar()
+    if not instance_info:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=None
         )
-    if user_info.get('user_id') != post_info.user_id:
+    if user_info.get('user_id') != instance_info.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=None

@@ -4,8 +4,15 @@ from pydantic import Field
 from src.accounts.schemas import UserReadBaseSchema
 
 
-class PostTagReadSchema(BaseModel):
-    id: int
+class CreatedAtBaseSchema(BaseModel):
+    created_at: str
+
+    @validator('created_at', pre=True)
+    def parse_created_at(cls, v):
+        return v.strftime('%Y-%m-%d %H:%M:%S')
+
+
+class PostTagBaseSchema(BaseModel):
     tag_id: int
     post_id: int
 
@@ -13,9 +20,8 @@ class PostTagReadSchema(BaseModel):
         orm_mode = True
 
 
-class SetPostTagSchema(BaseModel):
-    tag_id: int
-    post_id: int
+class PostTagReadSchema(PostTagBaseSchema):
+    id: int
 
 
 class TagBaseSchema(BaseModel):
@@ -29,13 +35,12 @@ class TagCreateSchema(TagBaseSchema):
     pass
 
 
-class TagReadSchema(TagBaseSchema):
-    id: int
-    created_at: str
+class TagUpdateSchema(TagBaseSchema):
+    pass
 
-    @validator('created_at', pre=True)
-    def parse_created_at(cls, v):
-        return v.strftime('%Y-%m-%d %H:%M:%S')
+
+class TagReadSchema(CreatedAtBaseSchema, TagBaseSchema):
+    id: int
 
 
 class PostBaseSchema(BaseModel):
@@ -56,12 +61,10 @@ class PostUpdateSchema(PostBaseSchema):
     pass
 
 
-class PostReadSchema(PostBaseSchema):
+class PostReadBaseSchema(CreatedAtBaseSchema, PostBaseSchema):
     id: int
-    user: UserReadBaseSchema
-    created_at: str
-    tags: List[TagReadSchema] | list
 
-    @validator('created_at', pre=True)
-    def parse_created_at(cls, v):
-        return v.strftime('%Y-%m-%d %H:%M:%S')
+
+class PostReadSchema(PostReadBaseSchema):
+    user: UserReadBaseSchema
+    tags: List[TagReadSchema] | list

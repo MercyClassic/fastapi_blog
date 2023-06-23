@@ -5,7 +5,8 @@ from loguru import logger
 from starlette.responses import JSONResponse
 
 from src.accounts.router import router as router_accounts
-from src.posts.router import router as router_posts
+from src.posts.router_posts import router as router_posts
+from src.posts.router_tags import router as router_tags
 
 
 logger.add(
@@ -43,3 +44,4 @@ async def unexpected_error_log(request, ex):
 
 app.include_router(router_accounts)
 app.include_router(router_posts)
+app.include_router(router_tags)

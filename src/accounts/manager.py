@@ -31,6 +31,11 @@ class UserManager:
             ))
         result = await session.execute(query)
         user = result.scalar()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Credentials are not valid'
+            )
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -55,7 +60,7 @@ class UserManager:
     @staticmethod
     def create_access_token(user_id: int) -> str:
         expires_delta = datetime.utcnow() + timedelta(minutes=60)
-        to_encode = {"exp": expires_delta, "sub": str(user_id), "is_admin": True}
+        to_encode = {"exp": expires_delta, "sub": str(user_id), "is_superuser": True}
         encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, ALGORITHM)
         return encoded_jwt
 
@@ -102,7 +107,7 @@ class UserManager:
                 )
         return {
             'user_id': int(access_token_data.get('sub')),
-            'is_admin': access_token_data.get('is_admin')
+            'is_admin': access_token_data.get('is_superuser')
         }
 
     @staticmethod
