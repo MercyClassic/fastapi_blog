@@ -5,12 +5,6 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from dotenv import load_dotenv
-import os
-import sys
-
-sys.path.append(os.path.join(sys.path[0], 'src'))
-
 from src.db.base import Base
 from src.config import (
     POSTGRES_USER,
@@ -18,14 +12,10 @@ from src.config import (
     POSTGRES_HOST,
     POSTGRES_PASSWORD
 )
-# from src.accounts.models import *
-# from src.posts.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-
-load_dotenv()
 
 section = config.config_ini_section
 config.set_section_option(section, 'POSTGRES_USER', POSTGRES_USER)

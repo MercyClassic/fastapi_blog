@@ -10,6 +10,8 @@ from starlette.responses import JSONResponse
 from src.accounts.models import User
 from src.accounts.schemas import UserReadSchemaForAdmin, UserReadBaseSchema
 
+from src.utils.utils import get_query_with_pagination_params
+
 
 async def get_users(
         session: AsyncSession,
@@ -19,12 +21,13 @@ async def get_users(
     fields = [User.id, User.email, User.username]
     if user_info.get('is_superuser'):
         fields += [User.registered_at, User.is_superuser, User.is_active, User.is_verified]
-    query = (
-        select(User)
-        .where(User.is_active == True)
-        .options(load_only(*fields))
-        .limit(pagination_params.get('limit'))
-        .offset(pagination_params.get('offset'))
+    query = get_query_with_pagination_params(
+        (
+            select(User)
+            .where(User.is_active == True)
+            .options(load_only(*fields))
+        ),
+        pagination_params
     )
     result = await session.execute(query)
     schema = UserReadSchemaForAdmin if user_info.get('is_superuser') else UserReadBaseSchema

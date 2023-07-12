@@ -1,20 +1,19 @@
 import hashlib
 import os
-import jwt
-from pydantic.datetime_parse import datetime, timedelta
-from sqlalchemy import insert, select, delete
+from sqlalchemy import insert, select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 from starlette import status
 from starlette.exceptions import HTTPException
-
-from src.accounts.models import User
-from src.accounts.refresh_token_model import RefreshToken
+from src.accounts.exceptions import InvalidToken
+from src.accounts.models import User, RefreshToken
+from src.accounts.jwt import generate_jwt, decode_jwt
 from src.accounts.schemas import UserCreateSchema
+from src.accounts.tasks import send_verify_email
 from src.config import (
     JWT_SECRET_KEY,
     JWT_REFRESH_SECRET_KEY,
-    ALGORITHM
+    SECRET_TOKEN_FOR_EMAIL,
 )
 
 
@@ -24,7 +23,7 @@ class UserManager:
             email: str,
             input_password: str,
             session: AsyncSession
-    ) -> int | Exception:
+    ) -> int:
         query = select(User).where(User.email == email).options(
             load_only(
                 User.id, User.email, User.password, User.is_active
@@ -51,25 +50,32 @@ class UserManager:
         )
 
     @staticmethod
-    async def create_jwt_tokens(user_id: int, session: AsyncSession) -> dict:
+    async def create_auth_tokens(user_id: int, session: AsyncSession) -> dict:
         return {
-            'access_token': UserManager.create_access_token(user_id),
+            'access_token': await UserManager.create_access_token(user_id, session),
             'refresh_token': await UserManager.create_refresh_token(user_id, session)
         }
 
     @staticmethod
-    def create_access_token(user_id: int) -> str:
-        expires_delta = datetime.utcnow() + timedelta(minutes=60)
-        to_encode = {"exp": expires_delta, "sub": str(user_id), "is_superuser": True}
-        encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, ALGORITHM)
-        return encoded_jwt
+    async def create_access_token(user_id: int, session: AsyncSession) -> str:
+        query = select(User).where(User.id == user_id).options(load_only(User.is_superuser))
+        result = await session.execute(query)
+        is_superuser = result.scalar().is_superuser
+        to_encode = {"sub": str(user_id), 'is_superuser': is_superuser}
+        return generate_jwt(
+            data=to_encode,
+            lifetime_seconds=60*60,
+            secret=JWT_SECRET_KEY
+        )
 
     @staticmethod
     async def create_refresh_token(user_id: int, session: AsyncSession) -> str:
-        expires_delta = datetime.utcnow() + timedelta(minutes=60*24*7)
-        to_encode = {"exp": expires_delta, "sub": str(user_id)}
-        encoded_jwt = jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, ALGORITHM)
-
+        to_encode = {"sub": str(user_id)}
+        encoded_jwt = generate_jwt(
+            data=to_encode,
+            lifetime_seconds=60*60*24*7,
+            secret=JWT_REFRESH_SECRET_KEY
+        )
         stmt = insert(RefreshToken).values(user_id=user_id, token=encoded_jwt)
         await session.execute(stmt)
         await session.commit()
@@ -77,56 +83,23 @@ class UserManager:
         return encoded_jwt
 
     @staticmethod
-    def get_user_info_from_access_token(
-            access_token: str, without_exception: bool = False
-    ) -> dict | None:
-        bad_status_code = None
-        try:
-            access_token_data = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        except jwt.exceptions.ExpiredSignatureError:
-            bad_status_code = 401
-        except (
-                jwt.exceptions.InvalidSignatureError,
-                jwt.exceptions.DecodeError,
-        ):
-            bad_status_code = 403
-        if bad_status_code:
-            if without_exception:
-                return None
-            if bad_status_code == 401:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token expired",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            elif bad_status_code == 403:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Could not validate credentials",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+    def get_user_info_from_access_token(access_token: str) -> dict:
+        access_token_data = decode_jwt(
+            encoded_jwt=access_token,
+            secret=JWT_SECRET_KEY
+        )
         return {
             'user_id': int(access_token_data.get('sub')),
-            'is_admin': access_token_data.get('is_superuser')
+            'is_superuser': access_token_data.get('is_superuser')
         }
 
     @staticmethod
     async def refresh_access_token(refresh_token: str, session: AsyncSession) -> dict:
-        try:
-            refresh_token_data = jwt.decode(refresh_token, JWT_REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
-        except jwt.exceptions.ExpiredSignatureError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token expired",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        ''' DELETE TOKEN AND RETURNING ID, IF ID IS NONE THAT MEAN ID WAS DELETED EARLY, MOST LIKELY BY HACKER '''
+        refresh_token_data = decode_jwt(
+            encoded_jwt=refresh_token,
+            secret=JWT_REFRESH_SECRET_KEY
+        )
+        ''' DELETE TOKEN AND RETURNING ID, IF ID IS NONE THAT MEANS ID WAS DELETED EARLY, MOST LIKELY BY HACKER '''
         stmt = delete(RefreshToken).where(RefreshToken.token == refresh_token).returning(RefreshToken.id)
         returned_id = await session.execute(stmt)
         await session.commit()
@@ -134,7 +107,7 @@ class UserManager:
         if not check:
             await UserManager.delete_all_refresh_tokens(int(refresh_token_data.get('sub')), session)
 
-        tokens = await UserManager.create_jwt_tokens(int(refresh_token_data.get('sub')), session)
+        tokens = await UserManager.create_auth_tokens(int(refresh_token_data.get('sub')), session)
         return tokens
 
     @staticmethod
@@ -156,6 +129,13 @@ class UserManager:
     ) -> dict:
         user_data = user_input_data.dict()
         user_data.pop('password1')
+        query = select(1).where(User.email == user_data.get('email'))
+        result = await session.execute(query)
+        if result.scalar():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='User with this email already exists'
+            )
         hashed_password = UserManager.make_password(user_data.pop('password2'))
         stmt = insert(User).values(
             **user_data,
@@ -164,13 +144,44 @@ class UserManager:
         result = await session.execute(stmt)
         await session.commit()
         user_data.setdefault('id', result.one().id)
-        UserManager.after_create(user_data.get('email'))
+        UserManager.after_create(user_data)
         return user_data
 
     @staticmethod
-    def after_create(email: str) -> None:
-        # here must be send email to verify (celery task)
-        pass
+    def after_create(user_data: dict) -> None:
+        verify_token = generate_jwt(
+            data=user_data,
+            lifetime_seconds=60*60*24*3,
+            secret=SECRET_TOKEN_FOR_EMAIL
+        )
+        send_verify_email.delay(user_data.get('email'), verify_token)
+
+    @staticmethod
+    async def get_user_by_email(email: str, session: AsyncSession) -> User:
+        query = (
+            select(User)
+            .where(User.email == email)
+            .options(load_only(User.id, User.email, User.is_verified))
+        )
+        result = await session.execute(query)
+        user = result.scalar()
+        return user
+
+    @staticmethod
+    async def verify(token: str, session: AsyncSession) -> None:
+        verify_token = decode_jwt(
+            encoded_jwt=token,
+            secret=SECRET_TOKEN_FOR_EMAIL
+        )
+        email = verify_token.get('email')
+        user = await UserManager.get_user_by_email(email, session)
+        if user.id != verify_token.get('id'):
+            raise InvalidToken
+        if user.is_verified:
+            raise InvalidToken
+        stmt = update(User).values(is_verified=True).where(User.email == email)
+        await session.execute(stmt)
+        await session.commit()
 
     @staticmethod
     def make_password(value: str) -> str:

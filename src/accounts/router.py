@@ -56,6 +56,18 @@ async def registration(
     )
 
 
+@router.get('/activate/{verify_token}')
+async def verify_account(
+        verify_token: str,
+        session: AsyncSession = Depends(get_async_session)
+):
+    await UserManager.verify(verify_token, session)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=None
+    )
+
+
 @router.post('/auth/login')
 async def login(
         authenticate_data: AuthenticateSchema,
@@ -63,7 +75,7 @@ async def login(
 ):
     user_id = await UserManager.authenticate(**authenticate_data.dict(), session=session)
     if user_id:
-        tokens = await UserManager.create_jwt_tokens(user_id, session)
+        tokens = await UserManager.create_auth_tokens(user_id, session)
         response = JSONResponse(status_code=status.HTTP_200_OK, content=None)
         for k, v in tokens.items():
             response.set_cookie(key=k, value=v)

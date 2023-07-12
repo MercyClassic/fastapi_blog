@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.responses import JSONResponse
 
-from src.utils.utils import get_query_with_limit_and_offset_params
+from src.utils.utils import get_query_with_pagination_params
 from src.posts.models import Post
 from src.posts.schemas import PostReadSchema, PostReadBaseSchema
 from src.posts.utils import (
@@ -38,7 +38,7 @@ async def get_user_posts(
         session: AsyncSession,
         pagination_params: dict
 ) -> JSONResponse:
-    query = get_query_with_limit_and_offset_params(
+    query = get_query_with_pagination_params(
         query=query_with_prefetched_user_and_tags.where(Post.user_id == user_id),
         pagination_params=pagination_params
     )
@@ -54,7 +54,7 @@ async def get_posts(
         session: AsyncSession,
         pagination_params: dict
 ) -> JSONResponse:
-    post_query = get_query_with_limit_and_offset_params(
+    post_query = get_query_with_pagination_params(
         query=query_with_prefetched_user_and_tags.where(Post.published == True),
         pagination_params=pagination_params
     )

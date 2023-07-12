@@ -9,7 +9,7 @@ from starlette import status
 from starlette.responses import JSONResponse
 
 from src.posts.utils import check_for_author
-from src.utils.utils import get_query_with_limit_and_offset_params
+from src.utils.utils import get_query_with_pagination_params
 from src.posts.models import Tag, PostTag, Post
 from src.posts.schemas import (
     TagReadSchema,
@@ -24,7 +24,7 @@ async def get_tags(
         session: AsyncSession,
         pagination_params: dict
 ) -> JSONResponse:
-    query = get_query_with_limit_and_offset_params(
+    query = get_query_with_pagination_params(
         query=select(Tag),
         pagination_params=pagination_params
     )
@@ -106,7 +106,7 @@ async def get_post_tags(
         session: AsyncSession,
         pagination_params: dict
 ) -> JSONResponse:
-    query = get_query_with_limit_and_offset_params(
+    query = get_query_with_pagination_params(
         query=(
             select(Tag)
             .join(PostTag)

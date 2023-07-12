@@ -5,7 +5,8 @@ from sqlalchemy import (
     String,
     Integer,
     TIMESTAMP,
-    Boolean
+    Boolean,
+    ForeignKey
 )
 
 
@@ -14,7 +15,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     username: Mapped[str] = mapped_column(String(50), nullable=False)
-    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     password: Mapped[str] = mapped_column(String(1024), nullable=False)
     registered_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.utcnow)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -23,3 +24,11 @@ class User(Base):
 
     posts = relationship('Post', back_populates='user')
     tags = relationship('Tag', back_populates='user')
+
+
+class RefreshToken(Base):
+    __tablename__ = 'refresh_token'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('account.id'), nullable=False)
+    token: Mapped[str] = mapped_column(String(200), nullable=False)
