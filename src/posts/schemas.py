@@ -1,7 +1,10 @@
 from typing import List
+
+from fastapi import UploadFile, Form
 from pydantic import BaseModel, validator
 from pydantic import Field
 from src.accounts.schemas import UserReadBaseSchema
+from src.utils.as_form import as_form
 
 
 class CreatedAtBaseSchema(BaseModel):
@@ -46,23 +49,25 @@ class TagReadSchema(CreatedAtBaseSchema, TagBaseSchema):
 class PostBaseSchema(BaseModel):
     title: str = Field(max_length=50)
     content: str
-    image: str | None
     published: bool
 
     class Config:
         orm_mode = True
 
 
+@as_form
 class PostCreateSchema(PostBaseSchema):
-    pass
+    image: UploadFile | None | str = Form(None)
 
 
+@as_form
 class PostUpdateSchema(PostBaseSchema):
-    pass
+    image: UploadFile | None | str = Form(None)
 
 
 class PostReadBaseSchema(CreatedAtBaseSchema, PostBaseSchema):
     id: int
+    image: str | None
 
 
 class PostReadSchema(PostReadBaseSchema):

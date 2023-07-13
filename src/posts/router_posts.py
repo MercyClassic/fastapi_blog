@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File, Body, Form
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.requests import Request
+
 from src.db.database import get_async_session
 
 from src.accounts.auth import get_current_user_info
@@ -19,7 +21,7 @@ router = APIRouter(
 
 @router.post('')
 async def create_post(
-        post: PostCreateSchema,
+        post: PostCreateSchema = Depends(PostCreateSchema.as_form),
         session: AsyncSession = Depends(get_async_session),
         user_info: dict = Depends(get_current_user_info)
 ):
@@ -55,10 +57,10 @@ async def get_post(
     return response
 
 
-@router.patch('/{post_id}')
+@router.put('/{post_id}')
 async def edit_post(
         post_id: int,
-        update_data: PostUpdateSchema,
+        update_data: PostUpdateSchema = Depends(PostUpdateSchema.as_form),
         session: AsyncSession = Depends(get_async_session),
         user_info: dict = Depends(get_current_user_info)
 ):

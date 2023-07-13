@@ -27,3 +27,5 @@ celery_app.autodiscover_tasks(
     [f'src.{module}' for module in os.listdir('src')],
     force=True
 )
+
+MEDIA_ROOT = 'src/media/images'

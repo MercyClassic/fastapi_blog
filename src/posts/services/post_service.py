@@ -1,4 +1,6 @@
 from typing import List
+
+from starlette.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
 from pydantic import parse_obj_as
 from sqlalchemy import insert, update, delete
@@ -6,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.responses import JSONResponse
 
+from src.utils.upload_image import upload_image
 from src.utils.utils import get_query_with_pagination_params
 from src.posts.models import Post
 from src.posts.schemas import PostReadSchema, PostReadBaseSchema
@@ -15,14 +18,30 @@ from src.posts.utils import (
 )
 
 
+async def update_data_image_attr(data: dict) -> None:
+    image = data.get('image')
+    if image:
+        if isinstance(image, UploadFile):
+            uploaded_image_path = await upload_image(image)
+            data.update({'image': uploaded_image_path})
+        elif isinstance(image, str) and image == ' ':
+            data.update({'image': None})
+    else:
+        data.pop('image')
+
+
 async def create_post(
         post: dict,
         session: AsyncSession,
         user_info: dict,
 ) -> JSONResponse:
-    stmt = insert(Post).values(**post, user_id=user_info.get('user_id')) \
-                       .returning(
-        Post.id, Post.image, Post.title, Post.content, Post.published, Post.user_id, Post.created_at
+    await update_data_image_attr(post)
+    stmt = (
+        insert(Post)
+        .values(**post, user_id=user_info.get('user_id'))
+        .returning(
+            Post.id, Post.image, Post.title, Post.content, Post.published, Post.user_id, Post.created_at
+        )
     )
     result = await session.execute(stmt)
     await session.commit()
@@ -93,9 +112,14 @@ async def edit_post(
         user_info: dict,
 ) -> JSONResponse:
     await check_for_author(post_id, Post, session, user_info)
-    stmt = update(Post).where(Post.id == post_id).values(**update_data) \
+    await update_data_image_attr(update_data)
+    stmt = (
+        update(Post)
+        .where(Post.id == post_id)
+        .values(**update_data)
         .returning(
-        Post.id, Post.image, Post.title, Post.content, Post.published, Post.user_id, Post.created_at
+            Post.id, Post.image, Post.title, Post.content, Post.published, Post.user_id, Post.created_at
+        )
     )
     result = await session.execute(stmt)
     await session.commit()

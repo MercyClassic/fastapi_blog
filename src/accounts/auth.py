@@ -6,6 +6,7 @@ from src.accounts.manager import UserManager
 async def get_access_token_from_request(request: Request) -> str:
     """ USING FOR DEPENDENCY """
     return request.cookies.get('access_token')
+    # return request.headers.get('Authorization')
 
 
 async def get_current_user_info(
