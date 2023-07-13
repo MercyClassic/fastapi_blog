@@ -14,6 +14,7 @@ from src.config import (
     JWT_SECRET_KEY,
     JWT_REFRESH_SECRET_KEY,
     SECRET_TOKEN_FOR_EMAIL,
+    IS_TEST
 )
 
 
@@ -154,6 +155,11 @@ class UserManager:
             lifetime_seconds=60*60*24*3,
             secret=SECRET_TOKEN_FOR_EMAIL
         )
+
+        """ FROM CONFIG """
+        if IS_TEST:
+            return
+
         send_verify_email.delay(user_data.get('email'), verify_token)
 
     @staticmethod
@@ -185,6 +191,11 @@ class UserManager:
 
     @staticmethod
     def make_password(value: str) -> str:
+        if len(value) < 4:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Length password must be >= 4'
+            )
         salt = os.urandom(32)
         password_hash = hashlib.pbkdf2_hmac(
             'sha256',

@@ -1,7 +1,6 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from src.config import (
     POSTGRES_USER,
     POSTGRES_DB,
@@ -14,7 +13,10 @@ DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTG
 
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-Base = declarative_base()
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:

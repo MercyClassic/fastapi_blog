@@ -1,8 +1,8 @@
-"""add user_id in tag model
+"""init
 
-Revision ID: 9ddb20dcecfa
+Revision ID: 671c1e631b97
 Revises: 
-Create Date: 2023-06-23 15:37:23.025053
+Create Date: 2023-07-13 22:28:10.335437
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9ddb20dcecfa'
+revision = '671c1e631b97'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,7 +27,8 @@ def upgrade() -> None:
     sa.Column('is_superuser', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('is_verified', sa.Boolean(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email')
     )
     op.create_table('post',
     sa.Column('id', sa.Integer(), nullable=False),

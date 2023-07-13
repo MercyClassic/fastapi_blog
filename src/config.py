@@ -29,3 +29,6 @@ celery_app.autodiscover_tasks(
 )
 
 MEDIA_ROOT = 'src/media/images'
+
+""" CHANGE TO TRUE WHEN RUN TESTS """
+IS_TEST = True

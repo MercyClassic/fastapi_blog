@@ -34,7 +34,7 @@ async def get_users(
     return response
 
 
-@router.get('/{user_id}')
+@router.get('/{user_id}', dependencies=[Depends(get_current_user_info)])
 async def get_user(
         user_id: int,
         session: AsyncSession = Depends(get_async_session),
