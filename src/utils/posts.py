@@ -4,7 +4,7 @@ from sqlalchemy.orm import load_only, joinedload, selectinload
 from starlette import status
 from starlette.exceptions import HTTPException
 
-from src.posts.models import Post, Tag
+from src.models.posts import Post, Tag
 
 
 async def check_for_author(

@@ -19,7 +19,7 @@ class UserCreateSchema(BaseModel):
                 or len(value) < 4
         ):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail='Password is invalid'
             )
         return value

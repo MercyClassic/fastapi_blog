@@ -1,10 +1,10 @@
 from typing import List
-
 from fastapi import UploadFile, Form
 from pydantic import BaseModel, validator
 from pydantic import Field
-from src.accounts.schemas import UserReadBaseSchema
+from src.schemas.users import UserReadBaseSchema
 from src.utils.as_form import as_form
+from src.utils.utils import get_stripped_value
 
 
 class CreatedAtBaseSchema(BaseModel):
@@ -17,7 +17,6 @@ class CreatedAtBaseSchema(BaseModel):
 
 class PostTagBaseSchema(BaseModel):
     tag_id: int
-    post_id: int
 
     class Config:
         orm_mode = True
@@ -25,10 +24,15 @@ class PostTagBaseSchema(BaseModel):
 
 class PostTagReadSchema(PostTagBaseSchema):
     id: int
+    post_id: int
 
 
 class TagBaseSchema(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=50)
+
+    @validator('name')
+    def validate_name(cls, value):
+        return get_stripped_value(value)
 
     class Config:
         orm_mode = True
@@ -47,9 +51,13 @@ class TagReadSchema(CreatedAtBaseSchema, TagBaseSchema):
 
 
 class PostBaseSchema(BaseModel):
-    title: str = Field(max_length=50)
-    content: str
+    title: str = Field(min_length=1, max_length=50)
+    content: str = Field(min_length=1, max_length=1000)
     published: bool
+
+    @validator('title', 'content')
+    def validate_title_and_content(cls, value):
+        return get_stripped_value(value)
 
     class Config:
         orm_mode = True

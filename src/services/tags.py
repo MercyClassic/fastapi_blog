@@ -8,10 +8,10 @@ from sqlalchemy.orm import load_only
 from starlette import status
 from starlette.responses import JSONResponse
 
-from src.posts.utils import check_for_author
+from src.utils.posts import check_for_author
 from src.utils.utils import get_query_with_pagination_params
-from src.posts.models import Tag, PostTag, Post
-from src.posts.schemas import (
+from src.models.posts import Tag, PostTag, Post
+from src.schemas.posts import (
     TagReadSchema,
     TagCreateSchema,
     TagUpdateSchema,
@@ -126,12 +126,17 @@ async def get_post_tags(
 
 
 async def set_post_tag(
+        post_id: int,
         data: PostTagBaseSchema,
         session: AsyncSession,
         user_info: dict
 ) -> JSONResponse:
-    await check_for_author(data.post_id, Post, session, user_info)
-    stmt = insert(PostTag).values(**data.dict()).returning(PostTag.id, PostTag.post_id, PostTag.tag_id)
+    await check_for_author(post_id, Post, session, user_info)
+    stmt = (
+        insert(PostTag)
+        .values(**data.dict(), post_id=post_id)
+        .returning(PostTag.id, PostTag.post_id, PostTag.tag_id)
+    )
     result = await session.execute(stmt)
     await session.commit()
     result = result.one()
@@ -147,7 +152,12 @@ async def delete_post_tag(
         session: AsyncSession,
         user_info: dict
 ) -> JSONResponse:
-    query = select(Post).join(PostTag).where(PostTag.id == posttag_id).options(load_only(Post.user_id))
+    query = (
+        select(Post)
+        .join(PostTag)
+        .where(PostTag.id == posttag_id)
+        .options(load_only(Post.user_id))
+    )
     result = await session.execute(query)
     instance = result.scalar()
     if not instance:

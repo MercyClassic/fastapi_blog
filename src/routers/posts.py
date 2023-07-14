@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Body, Form
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.requests import Request
 
 from src.db.database import get_async_session
 
-from src.accounts.auth import get_current_user_info
-from src.posts.services import post_service
-from src.posts.schemas import (
+from src.auth.auth import get_current_user_info
+from src.services import posts as post_service
+from src.schemas.posts import (
     PostCreateSchema,
     PostUpdateSchema
 )

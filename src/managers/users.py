@@ -5,11 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 from starlette import status
 from starlette.exceptions import HTTPException
-from src.accounts.exceptions import InvalidToken
-from src.accounts.models import User, RefreshToken
-from src.accounts.jwt import generate_jwt, decode_jwt
-from src.accounts.schemas import UserCreateSchema
-from src.accounts.tasks import send_verify_email
+from src.exceptions.users import InvalidToken
+from src.models.users import User, RefreshToken
+from src.auth.jwt import generate_jwt, decode_jwt
+from src.schemas.users import UserCreateSchema
+from src.tasks.users import send_verify_email
 from src.config import (
     JWT_SECRET_KEY,
     JWT_REFRESH_SECRET_KEY,
@@ -27,26 +27,26 @@ class UserManager:
     ) -> int:
         query = select(User).where(User.email == email).options(
             load_only(
-                User.id, User.email, User.password, User.is_active
+                User.id, User.email, User.password, User.is_active, User.is_verified
             ))
         result = await session.execute(query)
         user = result.scalar()
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail='Credentials are not valid'
             )
-        if not user.is_active:
+        if not user.is_active or not user.is_verified:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail='Account is not verified'
+                detail='Account is not active'
             )
         if user is not None and UserManager.check_password(
             input_password=input_password, password_from_db=user.password
         ):
             return user.id
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail='Credentials are not valid'
         )
 
@@ -134,7 +134,7 @@ class UserManager:
         result = await session.execute(query)
         if result.scalar():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail='User with this email already exists'
             )
         hashed_password = UserManager.make_password(user_data.pop('password2'))
@@ -193,7 +193,7 @@ class UserManager:
     def make_password(value: str) -> str:
         if len(value) < 4:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail='Length password must be >= 4'
             )
         salt = os.urandom(32)

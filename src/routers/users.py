@@ -8,10 +8,10 @@ from starlette.responses import JSONResponse
 from src.db.database import get_async_session
 
 from src.utils.utils import get_pagination_params
-from src.accounts import services
-from src.accounts.auth import get_current_user_info
-from src.accounts.manager import UserManager
-from src.accounts.schemas import (
+from src.services import users as service
+from src.auth.auth import get_current_user_info
+from src.managers.users import UserManager
+from src.schemas.users import (
     UserCreateSchema,
     UserReadBaseSchema,
     AuthenticateSchema
@@ -30,7 +30,7 @@ async def get_users(
         user_info: dict = Depends(get_current_user_info),
         pagination_params: dict = Depends(get_pagination_params)
 ) -> JSONResponse:
-    response = await services.get_users(session, user_info, pagination_params)
+    response = await service.get_users(session, user_info, pagination_params)
     return response
 
 
@@ -39,7 +39,7 @@ async def get_user(
         user_id: int,
         session: AsyncSession = Depends(get_async_session),
 ) -> JSONResponse:
-    response = await services.get_user(user_id, session)
+    response = await service.get_user(user_id, session)
     return response
 
 
@@ -77,8 +77,8 @@ async def login(
     if user_id:
         tokens = await UserManager.create_auth_tokens(user_id, session)
         response = JSONResponse(status_code=status.HTTP_200_OK, content=None)
-        for k, v in tokens.items():
-            response.set_cookie(key=k, value=v)
+        response.set_cookie(key='access_token', value=tokens.get('access_token'))
+        response.set_cookie(key='refresh_token', value=tokens.get('refresh_token'), httponly=True)
         return response
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=None)
 
@@ -90,8 +90,8 @@ async def refresh_access_token(
 ):
     tokens = await UserManager.refresh_access_token(request.cookies.get('refresh_token'), session)
     response = JSONResponse(status_code=status.HTTP_200_OK, content=None)
-    for k, v in tokens.items():
-        response.set_cookie(key=k, value=v)
+    response.set_cookie(key='access_token', value=tokens.get('access_token'), httponly=True)
+    response.set_cookie(key='refresh_token', value=tokens.get('refresh_token'), httponly=True)
     return response
 
 

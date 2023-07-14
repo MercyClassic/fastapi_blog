@@ -32,7 +32,7 @@ def decode_jwt(
         )
     except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )

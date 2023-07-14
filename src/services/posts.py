@@ -1,3 +1,4 @@
+from fastapi.exceptions import HTTPException
 from typing import List
 
 from starlette.datastructures import UploadFile
@@ -10,9 +11,9 @@ from starlette.responses import JSONResponse
 
 from src.utils.upload_image import upload_image
 from src.utils.utils import get_query_with_pagination_params
-from src.posts.models import Post
-from src.posts.schemas import PostReadSchema, PostReadBaseSchema
-from src.posts.utils import (
+from src.models.posts import Post
+from src.schemas.posts import PostReadSchema, PostReadBaseSchema
+from src.utils.posts import (
     check_for_author,
     query_with_prefetched_user_and_tags
 )
@@ -26,6 +27,11 @@ async def update_data_image_attr(data: dict) -> None:
             data.update({'image': uploaded_image_path})
         elif isinstance(image, str) and image == ' ':
             data.update({'image': None})
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail='Invalid image type'
+            )
     else:
         data.pop('image')
 

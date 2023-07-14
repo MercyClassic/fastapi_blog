@@ -7,8 +7,8 @@ from sqlalchemy.orm import load_only
 from starlette import status
 from starlette.responses import JSONResponse
 
-from src.accounts.models import User
-from src.accounts.schemas import UserReadSchemaForAdmin, UserReadBaseSchema
+from src.models.users import User
+from src.schemas.users import UserReadSchemaForAdmin, UserReadBaseSchema
 
 from src.utils.utils import get_query_with_pagination_params
 

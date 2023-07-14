@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.database import get_async_session
 
-from src.accounts.auth import get_current_user_info
-from src.posts.services import tag_service
-from src.posts.schemas import (
+from src.auth.auth import get_current_user_info
+from src.services import tags as tag_service
+from src.schemas.posts import (
     TagCreateSchema,
     PostTagBaseSchema,
     TagUpdateSchema
@@ -70,11 +70,12 @@ async def get_post_tags(
 
 @router.post('/post/{post_id}')
 async def set_post_tag(
+        post_id: int,
         data: PostTagBaseSchema,
         session: AsyncSession = Depends(get_async_session),
         user_info: dict = Depends(get_current_user_info)
 ):
-    response = await tag_service.set_post_tag(data, session, user_info)
+    response = await tag_service.set_post_tag(post_id, data, session, user_info)
     return response
 
 
