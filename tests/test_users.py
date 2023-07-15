@@ -1,6 +1,11 @@
+from typing import List
+
 import pytest
+from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
+from pydantic import parse_obj_as
 from sqlalchemy import select
+from sqlalchemy.orm import load_only
 from sqlalchemy.sql.functions import count
 
 from conftest import async_session_maker
@@ -9,6 +14,7 @@ from src.auth.jwt import generate_jwt
 from src.managers.users import UserManager
 from src.models.users import User, RefreshToken
 from src.config import SECRET_TOKEN_FOR_EMAIL
+from src.schemas.users import UserReadBaseSchema
 
 
 class TestUser:
@@ -45,6 +51,10 @@ class TestUser:
             result = await session.execute(query)
             assert result.scalar() == result_count
 
+            query = select(User).where(User.id == 1).options(load_only(User.id, User.is_verified))
+            result = await session.execute(query)
+            assert result.scalar().is_verified is False
+
     async def test_login_without_verify_account(self, client: AsyncClient):
         response = await client.post(
             url=app.url_path_for('login'),
@@ -67,6 +77,11 @@ class TestUser:
         verify_token = self.create_verify_token()
         response = await client.get(app.url_path_for('verify_account', verify_token=verify_token))
         assert response.status_code == 200
+
+        async with async_session_maker() as session:
+            query = select(User).where(User.id == 1).options(load_only(User.id, User.is_verified))
+            result = await session.execute(query)
+            assert result.scalar().is_verified is True
 
     @pytest.mark.parametrize(
         'email, password, status_code',
@@ -138,6 +153,12 @@ class TestUser:
             client.headers.pop('Authorization')
         response = await client.get(app.url_path_for('get_users'))
         assert response.status_code == status_code
+
+        if with_access_token:
+            async with async_session_maker() as session:
+                query = select(User)
+                result = await session.execute(query)
+                assert response.json() == jsonable_encoder(parse_obj_as(List[UserReadBaseSchema], result.scalars().all()))
 
     @pytest.mark.parametrize(
         'with_access_token, status_code',

@@ -109,10 +109,10 @@ async def get_post_tags(
     query = get_query_with_pagination_params(
         query=(
             select(Tag)
+            .options(load_only(Tag.id, Tag.name, Tag.created_at))
             .join(PostTag)
             .join(Post)
             .where(PostTag.post_id == post_id, Post.published == True)
-            .options(load_only(Tag.id, Tag.name, Tag.created_at))
         ),
         pagination_params=pagination_params
     )

@@ -31,13 +31,13 @@ class UserCreateSchema(BaseModel):
 class UserReadBaseSchema(BaseModel):
     id: int
     username: str
-    email: EmailStr
 
     class Config:
         orm_mode = True
 
 
 class UserReadSchemaForAdmin(UserReadBaseSchema):
+    email: EmailStr
     registered_at: datetime
     is_superuser: bool
     is_verified: bool

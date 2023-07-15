@@ -1,10 +1,16 @@
+from typing import List
+
 import pytest
+from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
+from pydantic import parse_obj_as
+from sqlalchemy.orm import load_only
 from sqlalchemy.sql.functions import count
 
 from src.managers.users import UserManager
 from src.models.posts import Post, Tag, PostTag
 from src.models.users import User
+from src.schemas.posts import TagReadSchema
 from tests.conftest import async_session_maker
 from sqlalchemy import insert, select
 from main import app
@@ -86,12 +92,17 @@ class TestTag:
         response = await client.get(app.url_path_for('get_tags'))
         assert response.status_code == 200
 
+        async with async_session_maker() as session:
+            query = select(Tag)
+            result = await session.execute(query)
+            assert response.json() == jsonable_encoder(parse_obj_as(List[TagReadSchema], result.scalars().all()))
+
     @pytest.mark.parametrize(
-        'name, by_author, status_code',
+        'name, by_author, should_match, status_code',
         [
-            ('edited', True, 200),
-            ('   ', True, 422),
-            ('edit not by author', False, 403),
+            ('edited', True, True, 200),
+            ('   ', False, False, 422),
+            ('edit not by author', False, False, 403),
         ]
     )
     async def test_edit_tag(
@@ -99,6 +110,7 @@ class TestTag:
             client: AsyncClient,
             name: str,
             by_author: bool,
+            should_match: bool,
             status_code: int
     ):
         await self.set_current_access_token(client, by_author)
@@ -109,6 +121,15 @@ class TestTag:
             }
         )
         assert response.status_code == status_code
+
+        async with async_session_maker() as session:
+            query = select(Tag).where(Tag.id == 1)
+            result = await session.execute(query)
+            tag = parse_obj_as(TagReadSchema, result.scalar())
+            if should_match:
+                assert tag.name == name
+            else:
+                assert tag.name != name
 
     @pytest.mark.parametrize(
         'tag_id, by_author, status_code, result_count',
@@ -140,7 +161,17 @@ class TestTag:
     async def test_get_post_tags(self, client: AsyncClient):
         response = await client.get(app.url_path_for('get_post_tags', post_id=1))
         assert response.status_code == 200
-        assert len(response.json()) == 2
+
+        async with async_session_maker() as session:
+            query = (
+                select(Tag)
+                .options(load_only(Tag.id, Tag.name, Tag.created_at))
+                .join(PostTag)
+                .join(Post)
+                .where(PostTag.post_id == 1, Post.published == True)
+            )
+            result = await session.execute(query)
+        assert response.json() == jsonable_encoder(parse_obj_as(List[TagReadSchema], result.scalars().all()))
 
     @pytest.mark.parametrize(
         'posttag_id, by_author, status_code, result_count',

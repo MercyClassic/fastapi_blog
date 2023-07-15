@@ -25,6 +25,9 @@ class Post(Base):
     user = relationship('User', back_populates='posts')
     tags = relationship('Tag', secondary='post_tag', back_populates='posts')
 
+    def __repr__(self):
+        return f"Object: [id: {self.id}, name:{self.title}]"
+
 
 class Tag(Base):
     __tablename__ = 'tag'
@@ -37,6 +40,9 @@ class Tag(Base):
     user = relationship('User', back_populates='tags')
     posts = relationship('Post', secondary='post_tag', back_populates='tags')
 
+    def __repr__(self):
+        return f"Object: [id: {self.id}, name:{self.name}]"
+
 
 class PostTag(Base):
     __tablename__ = 'post_tag'
@@ -44,3 +50,6 @@ class PostTag(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     post_id: Mapped[int] = mapped_column(Integer, ForeignKey('post.id'))
     tag_id: Mapped[int] = mapped_column(Integer, ForeignKey('tag.id'))
+
+    def __repr__(self):
+        return f"Object: [post_id: {self.post_id}, tag_id:{self.tag_id}]"

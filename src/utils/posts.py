@@ -5,6 +5,7 @@ from starlette import status
 from starlette.exceptions import HTTPException
 
 from src.models.posts import Post, Tag
+from src.models.users import User
 
 
 async def check_for_author(
@@ -30,6 +31,7 @@ async def check_for_author(
 
 query_with_prefetched_user_and_tags = (
     select(Post)
-    .options(joinedload(Post.user))
-    .options(selectinload(Post.tags))
+    .options(load_only(Post.id, Post.title, Post.content, Post.created_at, Post.published, Post.image))
+    .options(joinedload(Post.user).options(load_only(User.id, User.username)))
+    .options(selectinload(Post.tags).options(load_only(Tag.id, Tag.name, Tag.created_at)))
 )
