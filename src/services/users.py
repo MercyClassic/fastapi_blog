@@ -1,4 +1,5 @@
 from typing import List
+
 from fastapi.encoders import jsonable_encoder
 from pydantic import parse_obj_as
 from sqlalchemy import select
@@ -7,16 +8,15 @@ from sqlalchemy.orm import load_only
 from starlette import status
 from starlette.responses import JSONResponse
 
-from src.models.users import User
-from src.schemas.users import UserReadSchemaForAdmin, UserReadBaseSchema
-
-from src.utils.utils import get_query_with_pagination_params
+from models.users import User
+from schemas.users import UserReadBaseSchema, UserReadSchemaForAdmin
+from utils.utils import get_query_with_pagination_params
 
 
 async def get_users(
         session: AsyncSession,
         user_info: dict,
-        pagination_params: dict
+        pagination_params: dict,
 ) -> JSONResponse:
     fields = [User.id, User.email, User.username]
     if user_info.get('is_superuser'):
@@ -27,31 +27,35 @@ async def get_users(
             .where(User.is_active == True)
             .options(load_only(*fields))
         ),
-        pagination_params
+        pagination_params=pagination_params,
     )
     result = await session.execute(query)
     schema = UserReadSchemaForAdmin if user_info.get('is_superuser') else UserReadBaseSchema
     data = parse_obj_as(List[schema], result.scalars().all())
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(data)
+        content=jsonable_encoder(data),
     )
 
 
 async def get_user(
         user_id: int,
-        session: AsyncSession
+        session: AsyncSession,
 ) -> JSONResponse:
-    query = select(User).where(User.id == user_id).options(load_only(User.id, User.username, User.email))
+    query = (
+        select(User)
+        .where(User.id == user_id)
+        .options(load_only(User.id, User.username, User.email))
+    )
     result = await session.execute(query)
     result = result.scalar()
     if result is None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content=None
+            content=None,
         )
     data = parse_obj_as(UserReadBaseSchema, result)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(data)
+        content=jsonable_encoder(data),
     )

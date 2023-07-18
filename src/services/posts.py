@@ -1,22 +1,19 @@
-from fastapi.exceptions import HTTPException
 from typing import List
 
-from starlette.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import HTTPException
 from pydantic import parse_obj_as
-from sqlalchemy import insert, update, delete
+from sqlalchemy import delete, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.datastructures import UploadFile
 from starlette.responses import JSONResponse
 
-from src.utils.upload_image import upload_image
-from src.utils.utils import get_query_with_pagination_params
-from src.models.posts import Post
-from src.schemas.posts import PostReadSchema, PostReadBaseSchema
-from src.utils.posts import (
-    check_for_author,
-    query_with_prefetched_user_and_tags
-)
+from models.posts import Post
+from schemas.posts import PostReadBaseSchema, PostReadSchema
+from utils.posts import check_for_author, query_with_prefetched_user_and_tags
+from utils.upload_image import upload_image
+from utils.utils import get_query_with_pagination_params
 
 
 async def update_data_image_attr(data: dict) -> None:
@@ -30,7 +27,7 @@ async def update_data_image_attr(data: dict) -> None:
         else:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail='Invalid image type'
+                detail='Invalid image type',
             )
     else:
         data.pop('image')
@@ -46,7 +43,8 @@ async def create_post(
         insert(Post)
         .values(**post, user_id=user_info.get('user_id'))
         .returning(
-            Post.id, Post.image, Post.title, Post.content, Post.published, Post.user_id, Post.created_at
+            Post.id, Post.image, Post.title, Post.content,
+            Post.published, Post.user_id, Post.created_at,
         )
     )
     result = await session.execute(stmt)
@@ -54,47 +52,47 @@ async def create_post(
     data = parse_obj_as(PostReadBaseSchema, result.one())
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=jsonable_encoder(data)
+        content=jsonable_encoder(data),
     )
 
 
 async def get_user_posts(
         user_id: int,
         session: AsyncSession,
-        pagination_params: dict
+        pagination_params: dict,
 ) -> JSONResponse:
     query = get_query_with_pagination_params(
         query=query_with_prefetched_user_and_tags.where(Post.user_id == user_id),
-        pagination_params=pagination_params
+        pagination_params=pagination_params,
     )
     result = await session.execute(query)
     data = result.scalars().all()
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(parse_obj_as(List[PostReadSchema], data))
+        content=jsonable_encoder(parse_obj_as(List[PostReadSchema], data)),
     )
 
 
 async def get_posts(
         session: AsyncSession,
-        pagination_params: dict
+        pagination_params: dict,
 ) -> JSONResponse:
     post_query = get_query_with_pagination_params(
         query=query_with_prefetched_user_and_tags.where(Post.published == True),
-        pagination_params=pagination_params
+        pagination_params=pagination_params,
     )
     result = await session.execute(post_query)
     posts = result.scalars().all()
     data = parse_obj_as(List[PostReadSchema], posts)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(data)
+        content=jsonable_encoder(data),
     )
 
 
 async def get_post(
         post_id: int,
-        session: AsyncSession
+        session: AsyncSession,
 ) -> JSONResponse:
     query = query_with_prefetched_user_and_tags.where(Post.id == post_id, Post.published == True)
     result = await session.execute(query)
@@ -102,12 +100,12 @@ async def get_post(
     if not result:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content=None
+            content=None,
         )
     data = parse_obj_as(PostReadSchema, result)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(data)
+        content=jsonable_encoder(data),
     )
 
 
@@ -124,7 +122,8 @@ async def edit_post(
         .where(Post.id == post_id)
         .values(**update_data)
         .returning(
-            Post.id, Post.image, Post.title, Post.content, Post.published, Post.user_id, Post.created_at
+            Post.id, Post.image, Post.title, Post.content,
+            Post.published, Post.user_id, Post.created_at,
         )
     )
     result = await session.execute(stmt)
@@ -132,14 +131,14 @@ async def edit_post(
     data = parse_obj_as(PostReadBaseSchema, result.one())
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(data)
+        content=jsonable_encoder(data),
     )
 
 
 async def delete_post(
         post_id: int,
         session: AsyncSession,
-        user_info: dict
+        user_info: dict,
 ) -> JSONResponse:
     await check_for_author(post_id, Post, session, user_info)
     stmt = delete(Post).where(Post.id == post_id)
@@ -147,5 +146,5 @@ async def delete_post(
     await session.commit()
     return JSONResponse(
         status_code=status.HTTP_204_NO_CONTENT,
-        content=None
+        content=None,
     )

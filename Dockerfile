@@ -1,23 +1,27 @@
-FROM python:3.10.8
+FROM python:3.11-slim-buster
 
 ENV PYTHONDONTWRITEBYTEDECODE 1
 ENV PYTHONUNBUFFERED 1
 
-COPY ./requirements.txt /home/app/blog/requirements.txt
+RUN mkdir /blog
 
-RUN pip install --upgrade pip &&  \
-    apt update && apt install -y nano && \
-    pip install -r /home/app/blog/requirements.txt
+COPY ./pyproject.toml /blog/pyproject.toml
 
-RUN useradd -U app && \
-    chown -R app:app /home/app
+RUN apt update \
+    && pip install poetry \
+    && apt install -y nano \
+    && useradd -U app \
+    && chown -R app:app /blog \
+    && chdir /blog \
+    && poetry config virtualenvs.create false \
+    && poetry install --only main
 
-WORKDIR /home/app/blog
+WORKDIR /blog/src
 
-COPY --chown=app:app . .
+COPY --chown=app:app . /blog
 
 EXPOSE 8000
 
 USER app
 
-CMD ["sh", "entrypoint.sh"]
+CMD ["sh", "/blog/entrypoint.sh"]

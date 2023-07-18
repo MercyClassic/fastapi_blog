@@ -1,14 +1,9 @@
 from datetime import datetime
-from src.db.database import Base
-from sqlalchemy.orm import relationship, mapped_column, Mapped
-from sqlalchemy import (
-    ForeignKey,
-    String,
-    Text,
-    Integer,
-    TIMESTAMP,
-    Boolean,
-)
+
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from db.database import Base
 
 
 class Post(Base):
@@ -26,7 +21,7 @@ class Post(Base):
     tags = relationship('Tag', secondary='post_tag', back_populates='posts')
 
     def __repr__(self):
-        return f"Object: [id: {self.id}, name:{self.title}]"
+        return f'Object: [id: {self.id}, name:{self.title}]'
 
 
 class Tag(Base):
@@ -41,7 +36,7 @@ class Tag(Base):
     posts = relationship('Post', secondary='post_tag', back_populates='tags')
 
     def __repr__(self):
-        return f"Object: [id: {self.id}, name:{self.name}]"
+        return f'Object: [id: {self.id}, name:{self.name}]'
 
 
 class PostTag(Base):
@@ -52,4 +47,4 @@ class PostTag(Base):
     tag_id: Mapped[int] = mapped_column(Integer, ForeignKey('tag.id'))
 
     def __repr__(self):
-        return f"Object: [post_id: {self.post_id}, tag_id:{self.tag_id}]"
+        return f'Object: [post_id: {self.post_id}, tag_id:{self.tag_id}]'

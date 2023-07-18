@@ -8,13 +8,14 @@ from pydantic import parse_obj_as
 from sqlalchemy import insert, select
 from sqlalchemy.sql.functions import count
 
-from src.models.posts import Post
-from src.schemas.posts import PostReadSchema
-from src.utils.posts import query_with_prefetched_user_and_tags
-from tests.conftest import async_session_maker
-from src.managers.users import UserManager
-from src.models.users import User
+from auth.auth import create_access_token
 from main import app
+from managers.users import UserManager
+from models.posts import Post
+from models.users import User
+from schemas.posts import PostReadSchema
+from tests.conftest import async_session_maker
+from utils.posts import query_with_prefetched_user_and_tags
 
 
 class TestPost:
@@ -23,7 +24,7 @@ class TestPost:
         async with async_session_maker() as session:
             users_data = [
                 {'username': 'test', 'email': 'test@test.ru'},
-                {'username': 'test', 'email': 'test2@test.ru'}
+                {'username': 'test', 'email': 'test2@test.ru'},
             ]
             for user in users_data:
                 stmt = insert(User).values(
@@ -34,17 +35,25 @@ class TestPost:
                 await session.execute(stmt)
 
             await session.commit()
-            client.headers['Authorization'] = await UserManager.create_access_token(user_id=1, session=session)
+            client.headers['Authorization'] = await create_access_token(
+                user_id=1, session=session,
+            )
 
-    async def set_current_access_token(self, client: AsyncClient, by_author: bool):
+    @staticmethod
+    async def set_current_access_token(client: AsyncClient, by_author: bool):
         """ USER WITH ID = 1 IS AUTHOR """
         async with async_session_maker() as session:
             if by_author:
-                client.headers['Authorization'] = await UserManager.create_access_token(user_id=1, session=session)
+                client.headers['Authorization'] = await create_access_token(
+                    user_id=1, session=session,
+                )
             else:
-                client.headers['Authorization'] = await UserManager.create_access_token(user_id=2, session=session)
+                client.headers['Authorization'] = await create_access_token(
+                    user_id=2, session=session,
+                )
 
-    async def assert_count(self, model, result_count: int):
+    @staticmethod
+    async def assert_count(model, result_count: int):
         async with async_session_maker() as session:
             query = select(count(model.id))
             result = await session.execute(query)
@@ -55,11 +64,11 @@ class TestPost:
         [
             ('test', 'test', True, None, 201, 1),
             ('test', 'test', False, None, 201, 2),
-            ('test'*13, 'test', True, None, 422, 2),
-            ('test', 'test'*251, True, None, 422, 2),
+            ('test' * 13, 'test', True, None, 422, 2),
+            ('test', 'test' * 251, True, None, 422, 2),
             ('    ', '1', True, None, 422, 2),
-            ('1', '    ', True, None, 422, 2)
-        ]
+            ('1', '    ', True, None, 422, 2),
+        ],
     )
     async def test_create_post(
             self,
@@ -69,7 +78,7 @@ class TestPost:
             published: bool,
             image: UploadFile | None | str,
             status_code: int,
-            result_count: int
+            result_count: int,
     ):
         response = await client.post(
             url=app.url_path_for('create_post'),
@@ -77,8 +86,8 @@ class TestPost:
                 'title': title,
                 'content': content,
                 'published': published,
-                'image': image
-            }
+                'image': image,
+            },
         )
         assert response.status_code == status_code
 
@@ -89,12 +98,12 @@ class TestPost:
         [
             (1, 'edited', 'edited', True, None, True, True, 200),
             (2, 'edited', 'edited', False, None, True, True, 200),
-            (1, 'test'*13, 'test', False, None, True, False, 422),
-            (1, 'test', 'test'*251, False, None, True, False, 422),
+            (1, 'test' * 13, 'test', False, None, True, False, 422),
+            (1, 'test', 'test' * 251, False, None, True, False, 422),
             (1, '    ', '1', False, None, True, False, 422),
             (1, '1', '    ', False, None, True, False, 422),
-            (1, 'edited2', 'edited2', False, None, False, False, 403)
-        ]
+            (1, 'edited2', 'edited2', False, None, False, False, 403),
+        ],
     )
     async def test_edit_post(
             self,
@@ -106,7 +115,7 @@ class TestPost:
             image: UploadFile | None | str,
             by_author: bool,
             should_match: bool,
-            status_code: int
+            status_code: int,
     ):
         await self.set_current_access_token(client, by_author)
         response = await client.put(
@@ -115,8 +124,8 @@ class TestPost:
                 'title': title,
                 'content': content,
                 'published': published,
-                'image': image
-            }
+                'image': image,
+            },
         )
         assert response.status_code == status_code
 
@@ -138,7 +147,7 @@ class TestPost:
         [
             (2, False, 403, 2),
             (2, True, 204, 1),
-        ]
+        ],
     )
     async def test_delete_post(
             self,
@@ -161,7 +170,11 @@ class TestPost:
         async with async_session_maker() as session:
             query = query_with_prefetched_user_and_tags
             result = await session.execute(query)
-            assert response.json() == jsonable_encoder(parse_obj_as(List[PostReadSchema], result.scalars().all()))
+            assert response.json() == jsonable_encoder(
+                parse_obj_as(
+                    List[PostReadSchema], result.scalars().all(),
+                ),
+            )
 
     async def test_get_post(self, client: AsyncClient):
         response = await client.get(app.url_path_for('get_post', post_id=1))
@@ -170,4 +183,8 @@ class TestPost:
         async with async_session_maker() as session:
             query = query_with_prefetched_user_and_tags
             result = await session.execute(query)
-            assert response.json() == jsonable_encoder(parse_obj_as(PostReadSchema, result.scalar()))
+            assert response.json() == jsonable_encoder(
+                parse_obj_as(
+                    PostReadSchema, result.scalar(),
+                ),
+            )

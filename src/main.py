@@ -1,16 +1,15 @@
 from fastapi import FastAPI
+from loguru import logger
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
-from loguru import logger
 from starlette.responses import JSONResponse
 
-from src.routers.users import router as router_users
-from src.routers.posts import router as router_posts
-from src.routers.tags import router as router_tags
-
+from routers.posts import router as router_posts
+from routers.tags import router as router_tags
+from routers.users import router as router_users
 
 logger.add(
-    'src/logs/errors_log.log',
+    'logs/errors_log.log',
     format='{time} - {level} - {message}',
     level='ERROR',
     rotation='1 month',
@@ -19,7 +18,7 @@ logger.add(
 
 
 app = FastAPI(
-    title='First fastapi blog'
+    title='First fastapi blog',
 )
 
 origins = [
@@ -30,9 +29,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS", "DELETE", "PATCH", "PUT"],
-    allow_headers=["Content-Type", "Set-Cookie", "Access-Control-Allow-Headers", "Access-Control-Allow-Origin",
-                   "Authorization"],
+    allow_methods=['GET', 'POST', 'OPTIONS', 'DELETE', 'PATCH', 'PUT'],
+    allow_headers=[
+        'Content-Type',
+        'Set-Cookie',
+        'Access-Control-Allow-Headers',
+        'Access-Control-Allow-Origin',
+        'Authorization',
+    ],
 )
 
 

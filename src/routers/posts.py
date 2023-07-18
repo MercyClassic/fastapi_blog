@@ -1,16 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.database import get_async_session
-
-from src.auth.auth import get_current_user_info
-from src.services import posts as post_service
-from src.schemas.posts import (
-    PostCreateSchema,
-    PostUpdateSchema
-)
-from src.utils.utils import get_pagination_params
-
+from auth.auth import get_current_user_info
+from db.database import get_async_session
+from schemas.posts import PostCreateSchema, PostUpdateSchema
+from services import posts as post_service
+from utils.utils import get_pagination_params
 
 router = APIRouter(
     prefix='/posts',
@@ -22,7 +17,7 @@ router = APIRouter(
 async def create_post(
         post: PostCreateSchema = Depends(PostCreateSchema.as_form),
         session: AsyncSession = Depends(get_async_session),
-        user_info: dict = Depends(get_current_user_info)
+        user_info: dict = Depends(get_current_user_info),
 ):
     response = await post_service.create_post(post.dict(), session, user_info)
     return response
@@ -32,7 +27,7 @@ async def create_post(
 async def get_user_posts(
         user_id: int,
         session: AsyncSession = Depends(get_async_session),
-        pagination_params: dict = Depends(get_pagination_params)
+        pagination_params: dict = Depends(get_pagination_params),
 ):
     response = await post_service.get_user_posts(user_id, session, pagination_params)
     return response
@@ -41,7 +36,7 @@ async def get_user_posts(
 @router.get('')
 async def get_posts(
         session: AsyncSession = Depends(get_async_session),
-        pagination_params: dict = Depends(get_pagination_params)
+        pagination_params: dict = Depends(get_pagination_params),
 ):
     response = await post_service.get_posts(session, pagination_params)
     return response
@@ -61,7 +56,7 @@ async def edit_post(
         post_id: int,
         update_data: PostUpdateSchema = Depends(PostUpdateSchema.as_form),
         session: AsyncSession = Depends(get_async_session),
-        user_info: dict = Depends(get_current_user_info)
+        user_info: dict = Depends(get_current_user_info),
 ):
     response = await post_service.edit_post(post_id, update_data.dict(), session, user_info)
     return response
@@ -71,7 +66,7 @@ async def edit_post(
 async def delete_post(
         post_id: int,
         session: AsyncSession = Depends(get_async_session),
-        user_info: dict = Depends(get_current_user_info)
+        user_info: dict = Depends(get_current_user_info),
 ):
     response = await post_service.delete_post(post_id, session, user_info)
     return response

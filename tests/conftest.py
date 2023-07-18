@@ -1,17 +1,16 @@
-import os
 import asyncio
+import os
 from typing import AsyncGenerator
-from dotenv import load_dotenv
+
 import pytest
+from dotenv import load_dotenv
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
-from src.db.database import get_async_session
-from src.db.database import Base
+from db.database import Base, get_async_session
 from main import app
-
 
 load_dotenv()
 
@@ -20,7 +19,10 @@ POSTGRES_PASSWORD_TEST = os.getenv('POSTGRES_PASSWORD_TEST')
 POSTGRES_HOST_TEST = os.getenv('POSTGRES_HOST_TEST')
 POSTGRES_DB_TEST = os.getenv('POSTGRES_DB_TEST')
 
-DATABASE_URL_TEST = f'postgresql+asyncpg://{POSTGRES_USER_TEST}:{POSTGRES_PASSWORD_TEST}@{POSTGRES_HOST_TEST}:5432/{POSTGRES_DB_TEST}'
+DATABASE_URL_TEST = (
+    f'postgresql+asyncpg://{POSTGRES_USER_TEST}:{POSTGRES_PASSWORD_TEST}@'
+    f'{POSTGRES_HOST_TEST}:5432/{POSTGRES_DB_TEST}'
+)
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
@@ -53,5 +55,5 @@ def event_loop(request):
 
 @pytest.fixture(scope='module')
 async def client() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(app=app, base_url='http://test') as client:
         yield client

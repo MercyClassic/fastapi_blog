@@ -1,6 +1,7 @@
 import os
-from dotenv import load_dotenv
+
 from celery import Celery
+from dotenv import load_dotenv
 
 
 load_dotenv()
@@ -24,8 +25,8 @@ REDIS_HOST = os.getenv('REDIS_HOST')
 
 celery_app = Celery('blog', broker=f'redis://{REDIS_HOST}:6379/0')
 celery_app.autodiscover_tasks(
-    [f'src.tasks.{module}' for module in os.listdir('src/tasks')],
-    force=True
+    [f'tasks.{module}' for module in os.listdir('tasks')],
+    force=True,
 )
 
 MEDIA_ROOT = 'src/media/images'

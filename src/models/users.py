@@ -1,13 +1,9 @@
 from datetime import datetime
+
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from src.db.database import Base
-from sqlalchemy import (
-    String,
-    Integer,
-    TIMESTAMP,
-    Boolean,
-    ForeignKey
-)
+
+from db.database import Base
 
 
 class User(Base):

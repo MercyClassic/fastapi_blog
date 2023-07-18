@@ -1,6 +1,7 @@
 from datetime import datetime
+
 from fastapi import HTTPException
-from pydantic import EmailStr, BaseModel, validator
+from pydantic import BaseModel, EmailStr, validator
 from starlette import status
 
 
@@ -20,7 +21,7 @@ class UserCreateSchema(BaseModel):
         ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail='Password is invalid'
+                detail='Password is invalid',
             )
         return value
 

@@ -1,3 +1,3 @@
-from src.db.database import Base
-from src.models.users import *
-from src.models.posts import *
+from db.database import Base
+from models.posts import *
+from models.users import *

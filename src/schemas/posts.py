@@ -1,18 +1,19 @@
 from typing import List
-from fastapi import UploadFile, Form
-from pydantic import BaseModel, validator
-from pydantic import Field
-from src.schemas.users import UserReadBaseSchema
-from src.utils.as_form import as_form
-from src.utils.utils import get_stripped_value
+
+from fastapi import Form, UploadFile
+from pydantic import BaseModel, Field, validator
+
+from schemas.users import UserReadBaseSchema
+from utils.as_form import as_form
+from utils.utils import get_stripped_value
 
 
 class CreatedAtBaseSchema(BaseModel):
     created_at: str
 
     @validator('created_at', pre=True)
-    def parse_created_at(cls, v):
-        return v.strftime('%Y-%m-%d %H:%M:%S')
+    def parse_created_at(cls, value):
+        return value.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class PostTagBaseSchema(BaseModel):
