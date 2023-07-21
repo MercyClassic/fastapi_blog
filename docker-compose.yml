@@ -1,7 +1,7 @@
 services:
   postgres:
     container_name: postgres
-    image: postgres
+    image: postgres:15
     restart: always
     ports:
       - "5432:5432"
@@ -10,11 +10,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     healthcheck:
-      test: [ "CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'" ]
-      interval: 1m
+      test: [ "CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}' || exit 1" ]
+      interval: 5s
       timeout: 10s
       retries: 10
-      start_period: 5s
+      start_period: 3s
   blog:
     container_name: blog
     restart: always
@@ -24,8 +24,10 @@ services:
     volumes:
       - ./src/media:/blog/src/media
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
   nginx:
     image: nginx
     container_name: nginx
@@ -40,7 +42,7 @@ services:
       interval: 1m
       timeout: 10s
       retries: 10
-      start_period: 5s
+      start_period: 1s
   celery:
     build:
       context: .
@@ -53,8 +55,8 @@ services:
       test: [ "CMD", "executable" ]
       interval: 30s
       timeout: 30s
-      retries: 3
-      start_period: 5s
+      retries: 10
+      start_period: 1s
   flower:
     build:
       context: .
@@ -74,10 +76,11 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: [ "CMD", "redis-cli", "--raw", "incr", "ping", "|| exit 1" ]
-      interval: 1m
-      timeout: 10s
+      test: [ "CMD", "redis-cli", "ping", "|| exit 1" ]
+      interval: 3s
+      timeout: 5s
       retries: 30
+      start_period: 1s
 volumes:
   postgres_data:
   postgres_backup:

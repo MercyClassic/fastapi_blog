@@ -8,9 +8,9 @@ from config import ALGORITHM
 
 
 def generate_jwt(
-    data: dict,
-    lifetime_seconds: int,
-    secret: str,
+        data: dict,
+        lifetime_seconds: int,
+        secret: str,
 ) -> str:
     payload = data.copy()
     if lifetime_seconds:
@@ -20,17 +20,26 @@ def generate_jwt(
 
 
 def decode_jwt(
-    encoded_jwt: str,
-    secret: str,
+        encoded_jwt: str,
+        secret: str,
+        soft: bool = False,
 ) -> dict:
     try:
-        decoded_token = jwt.decode(encoded_jwt, secret, algorithms=[ALGORITHM])
-    except jwt.exceptions.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Token expired',
-            headers={'WWW-Authenticate': 'Bearer'},
+        decoded_token = jwt.decode(
+            encoded_jwt,
+            secret,
+            algorithms=[ALGORITHM],
+            options={'verify_signature': False},
         )
+        if decoded_token.get('exp') < datetime.utcnow().timestamp():
+            if soft:
+                """ FOR LOGOUT """
+                return {'sub': decoded_token.get('sub')}
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Token expired',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
     except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

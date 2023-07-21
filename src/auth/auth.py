@@ -84,7 +84,7 @@ async def delete_all_refresh_tokens(user_id: int, session: AsyncSession) -> None
 
 
 async def delete_current_refresh_token(token: str, session: AsyncSession) -> None:
-    token_data = decode_jwt(token, secret=JWT_REFRESH_SECRET_KEY)
+    token_data = decode_jwt(token, secret=JWT_REFRESH_SECRET_KEY, soft=True)
     stmt = delete(RefreshToken).where(RefreshToken.token == token).returning(RefreshToken.id)
     result = await session.execute(stmt)
     await session.commit()

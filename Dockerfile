@@ -10,6 +10,7 @@ COPY ./pyproject.toml /blog/pyproject.toml
 RUN apt update \
     && pip install poetry \
     && apt install -y nano \
+    && apt install -y libmagic1 \
     && useradd -U app \
     && chown -R app:app /blog \
     && chdir /blog \
