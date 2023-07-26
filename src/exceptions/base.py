@@ -2,17 +2,17 @@ from fastapi.exceptions import HTTPException
 from starlette import status
 
 
-class InvalidToken(HTTPException):
+class NotFound(HTTPException):
     def __init__(self):
         super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Invalid token',
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Not Found'
         )
 
 
-class AccountAlreadyActivated(HTTPException):
+class PermissionDenied(HTTPException):
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Account Already Activated',
+            detail='Permission Denied'
         )

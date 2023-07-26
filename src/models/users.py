@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
+from sqlalchemy import TIMESTAMP, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.database import Base
@@ -20,11 +20,3 @@ class User(Base):
 
     posts = relationship('Post', back_populates='user')
     tags = relationship('Tag', back_populates='user')
-
-
-class RefreshToken(Base):
-    __tablename__ = 'refresh_token'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('account.id'), nullable=False)
-    token: Mapped[str] = mapped_column(String(200), nullable=False)

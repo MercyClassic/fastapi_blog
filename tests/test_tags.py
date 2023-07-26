@@ -8,7 +8,8 @@ from sqlalchemy import insert, select
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql.functions import count
 
-from auth.auth import create_access_token
+from auth.jwt import generate_jwt
+from config import JWT_ACCESS_SECRET_KEY
 from main import app
 from managers.users import UserManager
 from models.posts import Post, PostTag, Tag
@@ -46,16 +47,18 @@ class TestTag:
     @staticmethod
     async def set_current_access_token(client: AsyncClient, by_author: bool):
         """ USER WITH ID = 1 IS AUTHOR """
-        async with async_session_maker() as session:
-            if by_author:
-                client.headers['Authorization'] = await create_access_token(
-                    user_id=1, session=session,
-                )
-            else:
-                client.headers['Authorization'] = await create_access_token(
-                    user_id=2, session=session,
-                )
-
+        if by_author:
+            client.headers['Authorization'] = generate_jwt(
+                data={'sub': 1},
+                secret=JWT_ACCESS_SECRET_KEY,
+                lifetime_seconds=60,
+            )
+        else:
+            client.headers['Authorization'] = generate_jwt(
+                data={'sub': 2},
+                secret=JWT_ACCESS_SECRET_KEY,
+                lifetime_seconds=60,
+            )
     @staticmethod
     async def assert_count(model, result_count: int):
         async with async_session_maker() as session:
@@ -81,10 +84,11 @@ class TestTag:
             result_count: int,
     ):
         if with_authorization:
-            async with async_session_maker() as session:
-                client.headers['Authorization'] = await create_access_token(
-                    user_id=1, session=session,
-                )
+            client.headers['Authorization'] = generate_jwt(
+                data={'sub': 1},
+                secret=JWT_ACCESS_SECRET_KEY,
+                lifetime_seconds=60,
+            )
         else:
             client.headers.pop('Authorization', None)
         response = await client.post(
@@ -181,7 +185,7 @@ class TestTag:
                 .options(load_only(Tag.id, Tag.name, Tag.created_at))
                 .join(PostTag)
                 .join(Post)
-                .where(PostTag.post_id == 1, Post.published is True)
+                .where(PostTag.post_id == 1, Post.published == True)
             )
             result = await session.execute(query)
         assert response.json() == jsonable_encoder(
@@ -191,7 +195,7 @@ class TestTag:
         )
 
     @pytest.mark.parametrize(
-        'posttag_id, by_author, status_code, result_count',
+        'post_tag_id, by_author, status_code, result_count',
         [
             (1, False, 403, 2),
             (1, True, 204, 1),
@@ -201,13 +205,13 @@ class TestTag:
     async def test_delete_post_tag(
             self,
             client: AsyncClient,
-            posttag_id: int,
+            post_tag_id: int,
             by_author: bool,
             status_code: int,
             result_count: int,
     ):
         await self.set_current_access_token(client, by_author)
-        response = await client.delete(app.url_path_for('delete_post_tag', posttag_id=posttag_id))
+        response = await client.delete(app.url_path_for('delete_post_tag', post_tag_id=post_tag_id))
         assert response.status_code == status_code
 
         await self.assert_count(PostTag, result_count)

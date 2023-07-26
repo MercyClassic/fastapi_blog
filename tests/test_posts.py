@@ -8,7 +8,8 @@ from pydantic import parse_obj_as
 from sqlalchemy import insert, select
 from sqlalchemy.sql.functions import count
 
-from auth.auth import create_access_token
+from auth.jwt import generate_jwt
+from config import JWT_ACCESS_SECRET_KEY
 from main import app
 from managers.users import UserManager
 from models.posts import Post
@@ -35,22 +36,27 @@ class TestPost:
                 await session.execute(stmt)
 
             await session.commit()
-            client.headers['Authorization'] = await create_access_token(
-                user_id=1, session=session,
+            client.headers['Authorization'] = generate_jwt(
+                data={'sub': 1},
+                secret=JWT_ACCESS_SECRET_KEY,
+                lifetime_seconds=60,
             )
 
     @staticmethod
     async def set_current_access_token(client: AsyncClient, by_author: bool):
         """ USER WITH ID = 1 IS AUTHOR """
-        async with async_session_maker() as session:
-            if by_author:
-                client.headers['Authorization'] = await create_access_token(
-                    user_id=1, session=session,
-                )
-            else:
-                client.headers['Authorization'] = await create_access_token(
-                    user_id=2, session=session,
-                )
+        if by_author:
+            client.headers['Authorization'] = generate_jwt(
+                data={'sub': 1},
+                secret=JWT_ACCESS_SECRET_KEY,
+                lifetime_seconds=60,
+            )
+        else:
+            client.headers['Authorization'] = generate_jwt(
+                data={'sub': 2},
+                secret=JWT_ACCESS_SECRET_KEY,
+                lifetime_seconds=60,
+            )
 
     @staticmethod
     async def assert_count(model, result_count: int):

@@ -4,12 +4,14 @@ from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
+from routers.jwt import router as router_jwt
 from routers.posts import router as router_posts
 from routers.tags import router as router_tags
 from routers.users import router as router_users
 
+
 logger.add(
-    'logs/errors_log.log',
+    'src/logs/errors_log.log',
     format='{time} - {level} - {message}',
     level='ERROR',
     rotation='1 month',
@@ -46,6 +48,7 @@ async def unexpected_error_log(request, ex):
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=None)
 
 
-app.include_router(router_users)
+app.include_router(router_jwt)
 app.include_router(router_posts)
 app.include_router(router_tags)
+app.include_router(router_users)

@@ -43,8 +43,3 @@ class UserReadSchemaForAdmin(UserReadBaseSchema):
     is_superuser: bool
     is_verified: bool
     is_active: bool
-
-
-class AuthenticateSchema(BaseModel):
-    email: EmailStr
-    input_password: str

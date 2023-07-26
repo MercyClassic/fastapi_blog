@@ -31,19 +31,19 @@ def decode_jwt(
             algorithms=[ALGORITHM],
             options={'verify_signature': False},
         )
-        if decoded_token.get('exp') < datetime.utcnow().timestamp():
-            if soft:
-                """ FOR LOGOUT """
-                return {'sub': decoded_token.get('sub')}
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Token expired',
-                headers={'WWW-Authenticate': 'Bearer'},
-            )
     except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Could not validate credentials',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    if decoded_token.get('exp') < datetime.utcnow().timestamp():
+        if soft:
+            """ FOR LOGOUT """
+            return {'sub': decoded_token.get('sub')}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Token expired',
             headers={'WWW-Authenticate': 'Bearer'},
         )
     return decoded_token

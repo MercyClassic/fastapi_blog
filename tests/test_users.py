@@ -9,27 +9,28 @@ from sqlalchemy import select
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql.functions import count
 
-from auth.auth import create_access_token
 from auth.jwt import generate_jwt
-from config import SECRET_TOKEN_FOR_EMAIL
+from config import SECRET_TOKEN_FOR_EMAIL, JWT_ACCESS_SECRET_KEY
 from main import app
-from models.users import RefreshToken, User
+from models.users import User
+from models.jwt import RefreshToken
 from schemas.users import UserReadBaseSchema
 
 
 class TestUser:
     @pytest.mark.parametrize(
-        'password1, password2, status_code, result_count',
+        'email, password1, password2, status_code, result_count',
         [
-            ('test', 'test', 201, 1),
-            ('tes', 'tes', 422, 1),
-            ('te st', 'te st', 422, 1),
-            ('%^&*', '%^&*', 422, 1),
+            ('test@test.ru', 'test', 'test', 201, 1),
+            ('test2@test.ru', 'tes', 'tes', 422, 1),
+            ('test2@test.ru', 'te st', 'te st', 422, 1),
+            ('test2@test.ru', '%^&*', '%^&*', 422, 1),
         ],
     )
     async def test_register(
             self,
             client: AsyncClient,
+            email: str,
             password1: str,
             password2: str,
             status_code: int,
@@ -39,7 +40,7 @@ class TestUser:
             url=app.url_path_for('registration'),
             json={
                 'username': 'test',
-                'email': 'test@test.ru',
+                'email': email,
                 'password1': password1,
                 'password2': password2,
             },
@@ -129,10 +130,11 @@ class TestUser:
 
     @staticmethod
     async def set_access_token(client: AsyncClient):
-        async with async_session_maker() as session:
-            client.headers['Authorization'] = await create_access_token(
-                user_id=1, session=session,
-            )
+        client.headers['Authorization'] = generate_jwt(
+            data={'sub': 1},
+            secret=JWT_ACCESS_SECRET_KEY,
+            lifetime_seconds=60,
+        )
 
     @pytest.mark.parametrize(
         'with_access_token, status_code',
