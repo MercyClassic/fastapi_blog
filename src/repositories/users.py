@@ -17,7 +17,7 @@ class UserRepository(SQLAlchemyRepository):
             .options(
                 load_only(
                     User.id, User.email, User.password, User.is_active, User.is_verified,
-                )
+                ),
             )
         )
         result = await self.session.execute(query)

@@ -46,7 +46,7 @@ class JWTService:
         refresh_token_data = decode_jwt(
             encoded_jwt=refresh_token,
             secret=JWT_REFRESH_SECRET_KEY,
-            soft=True
+            soft=True,
         )
         await self.delete_user_tokens_if_not_exist(refresh_token, refresh_token_data)
 

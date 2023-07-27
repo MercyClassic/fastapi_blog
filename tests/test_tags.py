@@ -59,6 +59,7 @@ class TestTag:
                 secret=JWT_ACCESS_SECRET_KEY,
                 lifetime_seconds=60,
             )
+
     @staticmethod
     async def assert_count(model, result_count: int):
         async with async_session_maker() as session:
