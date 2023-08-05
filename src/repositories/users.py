@@ -16,14 +16,15 @@ class UserRepository(SQLAlchemyRepository):
             .where(self.model.email == email)
             .options(
                 load_only(
-                    User.id, User.email, User.password, User.is_active, User.is_verified,
+                    self.model.id, self.model.email, self.model.password,
+                    self.model.is_active, self.model.is_verified,
                 ),
             )
         )
         result = await self.session.execute(query)
         return result.scalar()
 
-    async def get_all(self, fields: List[str]) -> List[User]:
+    async def get_all(self, fields: List[str]) -> List[model]:
         query = (
             select(self.model)
             .where(self.model.is_active == True)
@@ -37,7 +38,7 @@ class UserRepository(SQLAlchemyRepository):
             self,
             user_id: int,
             fields: List[str],
-    ) -> User:
+    ) -> model:
         query = (
             select(self.model)
             .where(self.model.id == user_id)
@@ -61,11 +62,11 @@ class UserRepository(SQLAlchemyRepository):
         return result.scalar_one()
 
     async def is_user_exists_by_email(self, email: str) -> int | None:
-        query = select(User).where(self.model.email == email)
+        query = select(self.model).where(self.model.email == email)
         result = await self.session.execute(query)
         return result.scalar()
 
-    async def get_user_by_email(self, email: str) -> User:
+    async def get_user_by_email(self, email: str) -> model:
         query = (
             select(self.model)
             .where(self.model.email == email)

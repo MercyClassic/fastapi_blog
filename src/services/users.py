@@ -1,8 +1,6 @@
 from typing import List
 
 from fastapi import HTTPException
-from fastapi.encoders import jsonable_encoder
-from pydantic import parse_obj_as
 from starlette import status
 
 from auth.jwt import generate_jwt, decode_jwt
@@ -12,7 +10,6 @@ from exceptions.users import InvalidToken
 from managers.users import UserManager
 from models.users import User
 from repositories.users import UserRepository
-from schemas.users import UserReadBaseSchema, UserReadSchemaForAdmin
 from tasks.users import send_verify_email
 
 
@@ -44,21 +41,19 @@ class UserService:
     async def get_users(
             self,
             user_info: dict,
-    ) -> dict:
+    ) -> List[User]:
         fields = [User.id, User.email, User.username]
         if user_info.get('is_superuser'):
             fields += [User.registered_at, User.is_superuser, User.is_active, User.is_verified]
 
         data = await self.user_repo.get_all(fields=fields)
-        schema = UserReadSchemaForAdmin if user_info.get('is_superuser') else UserReadBaseSchema
-        data = parse_obj_as(List[schema], data)
-        return jsonable_encoder(data)
+        return data
 
     async def get_user(
             self,
             user_info: dict,
             user_id: int,
-    ) -> dict:
+    ) -> User:
         fields = [User.id, User.email, User.username]
         if user_info.get('is_superuser'):
             fields += [User.registered_at, User.is_superuser, User.is_active, User.is_verified]
@@ -66,8 +61,6 @@ class UserService:
         data = await self.user_repo.get_one(user_id, fields=fields)
         if not data:
             raise NotFound
-        schema = UserReadSchemaForAdmin if user_info.get('is_superuser') else UserReadBaseSchema
-        data = jsonable_encoder(parse_obj_as(schema, data))
         return data
 
     async def create_user(
