@@ -23,9 +23,16 @@ async def login(
 ):
     user_id = await user_service.authenticate(**authenticate_data.dict())
     tokens = await jwt_service.create_auth_tokens(user_id)
-    response = JSONResponse(status_code=status.HTTP_200_OK, content=None)
-    response.set_cookie(key='access_token', value=tokens.get('access_token'), httponly=True)
-    response.set_cookie(key='refresh_token', value=tokens.get('refresh_token'), httponly=True)
+    response = JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={'access_token': tokens['access_token']},
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=tokens['refresh_token'],
+        httponly=True,
+        max_age=60 * 60 * 24 * 7,
+    )
     return response
 
 
@@ -35,9 +42,16 @@ async def refresh_access_token(
     jwt_service: JWTService = Depends(get_jwt_service),
 ):
     tokens = await jwt_service.refresh_auth_tokens(request.cookies.get('refresh_token'))
-    response = JSONResponse(status_code=status.HTTP_200_OK, content=None)
-    response.set_cookie(key='access_token', value=tokens.get('access_token'), httponly=True)
-    response.set_cookie(key='refresh_token', value=tokens.get('refresh_token'), httponly=True)
+    response = JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=tokens['access_token'],
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=tokens['refresh_token'],
+        httponly=True,
+        max_age=60 * 60 * 24 * 7,
+    )
     return response
 
 
@@ -49,5 +63,4 @@ async def logout(
     await jwt_service.delete_refresh_token(request.cookies.get('refresh_token'))
     response = JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=None)
     response.delete_cookie('refresh_token')
-    response.delete_cookie('access_token')
     return response

@@ -1,0 +1,29 @@
+body {
+    font-size: 30px;
+    color: #E8E8E8;
+    background-color: #272727;
+}
+
+input {
+    font-size:24px;
+}
+
+.centred-container__align-centred {
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+}
+
+.centred-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    grid-gap:20px;
+}
+
+
+.centred-container__item {
+    height: fit-content;
+    width: fit-content;
+}

@@ -179,7 +179,7 @@ class TestPost:
         assert response.json() == jsonable_encoder(
             parse_obj_as(
                 List[PostReadSchema],
-                result.scalars().all(),
+                result.unique().scalars().all(),
             ),
         )
 
@@ -192,6 +192,6 @@ class TestPost:
         assert response.json() == jsonable_encoder(
             parse_obj_as(
                 PostReadSchema,
-                result.scalar(),
+                result.unique().scalar(),
             ),
         )

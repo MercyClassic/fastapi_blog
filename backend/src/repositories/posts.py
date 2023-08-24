@@ -1,7 +1,7 @@
 from typing import List
 
 from sqlalchemy import delete, insert, select, update
-from sqlalchemy.orm import joinedload, load_only, selectinload
+from sqlalchemy.orm import joinedload, load_only
 
 from models.posts import Post
 from models.tags import Tag
@@ -20,13 +20,13 @@ class PostRepository(BaseSQLAlchemyRepository):
         query = query.where(Post.user_id == user_id)
         query = self.paginate_query(query)
         result = await self.session.execute(query)
-        return result.scalars().all()
+        return result.unique().scalars().all()
 
     async def get_posts(self) -> List[Post]:
         query = await self.get_query_with_prefetched_user_and_tags()
         query = self.paginate_query(query)
         result = await self.session.execute(query)
-        return result.scalars().all()
+        return result.unique().scalars().all()
 
     async def get_post(self, post_id: int) -> Post:
         query = await self.get_query_with_prefetched_user_and_tags()
@@ -35,7 +35,7 @@ class PostRepository(BaseSQLAlchemyRepository):
             Post.published == True,
         )
         result = await self.session.execute(query)
-        return result.scalar_one()
+        return result.unique().scalar_one()
 
     async def create_post(self, data: dict):
         stmt = insert(Post).values(**data).returning(Post)
@@ -71,8 +71,6 @@ class PostRepository(BaseSQLAlchemyRepository):
             )
             .options(
                 joinedload(Post.user).options(load_only(User.id, User.username)),
-            )
-            .options(
-                selectinload(Post.tags).options(load_only(Tag.id, Tag.name, Tag.created_at)),
+                joinedload(Post.tags).options(load_only(Tag.id, Tag.name, Tag.created_at)),
             )
         )

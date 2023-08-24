@@ -3,6 +3,7 @@ from loguru import logger
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from starlette.staticfiles import StaticFiles
 
 from routers.jwt import router as router_jwt
 from routers.posts import router as router_posts
@@ -22,8 +23,10 @@ app = FastAPI(
     title='First fastapi blog',
 )
 
+app.mount('/media', StaticFiles(directory='media'), name='media')
+
 origins = [
-    'http://127.0.0.1:8000',
+    'http://localhost:3000',
 ]
 
 app.add_middleware(
@@ -37,6 +40,7 @@ app.add_middleware(
         'Access-Control-Allow-Headers',
         'Access-Control-Allow-Origin',
         'Authorization',
+        'X-CSRFToken',
     ],
 )
 

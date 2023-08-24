@@ -60,7 +60,7 @@ class TagRepository(BaseSQLAlchemyRepository):
         query = await PostRepository.get_query_with_prefetched_user_and_tags()
         # query = query.where tag.id == tag_id
         result = await self.session.execute(query)
-        return result.scalars().all()
+        return result.unique().scalars().all()
 
     async def get_post_tag_id(self, tag_id: int, post_id: int) -> int:
         query = (

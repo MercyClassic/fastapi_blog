@@ -82,7 +82,7 @@ async def get_post(
     )
 
 
-@router.put('/{post_id}')
+@router.patch('/{post_id}')
 async def edit_post(
     post_id: int,
     update_data: PostUpdateSchema = Depends(PostUpdateSchema.as_form),
