@@ -9,4 +9,17 @@ export default class AuthService {
         )
         return response
     }
+
+    static async refreshToken() {
+        const response = await axios.post(
+            `http://localhost/api/v1/auth/refresh_token`,
+        )
+        return response.data.access_token;
+    }
+
+    static async logout() {
+        const response = await axios.post(
+            `http://localhost/api/v1/auth/logout`,
+        )
+    }
 }

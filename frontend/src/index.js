@@ -11,8 +11,8 @@ import axios from 'axios';
 //}
 //
 //axios.defaults.headers.post['X-CSRFToken'] = getCookie('csrftoken');
-axios.defaults.withCredentials = true
-axios.defaults.headers.post['Authorization'] = localStorage.getItem('access_token');
+axios.defaults.withCredentials = true;
+axios.defaults.headers['Authorization'] = localStorage.getItem('Authorization');
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

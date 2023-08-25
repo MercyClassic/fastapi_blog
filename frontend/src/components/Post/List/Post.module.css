@@ -1,0 +1,52 @@
+.postWrapper {
+    box-shadow: 0 0 10px 3px #ddd;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.postWrapper:hover {
+    box-shadow: 0 0 20px 5px #9f9f9f;
+}
+
+.postContentContainer {
+    padding: 20px;
+    max-height: 400px;
+    max-width: 400px;
+}
+
+.postTitle {
+    text-align: center;
+    color: teal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.postContent {
+    text-align: center;
+    color: #33FF99;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.postCreatedAt {
+    text-align: center;
+    color: #8DEAD4;
+}
+
+.postImageContainer {
+    width: 100%;
+    height: 100%;
+}
+
+.postImage {
+    height: 100%;
+    width: 100%;
+    object-position: center;
+    object-fit: cover;
+}
+
+.postNoImage {
+    text-align: center;
+}

@@ -126,7 +126,7 @@ class TestPost:
         status_code: int,
     ):
         await self.set_current_access_token(client, by_author)
-        response = await client.put(
+        response = await client.patch(
             url=app.url_path_for('edit_post', post_id=post_id),
             data={
                 'title': title,

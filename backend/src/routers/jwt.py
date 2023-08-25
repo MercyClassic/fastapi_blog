@@ -44,7 +44,7 @@ async def refresh_access_token(
     tokens = await jwt_service.refresh_auth_tokens(request.cookies.get('refresh_token'))
     response = JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=tokens['access_token'],
+        content={'access_token': tokens['access_token']},
     )
     response.set_cookie(
         key='refresh_token',

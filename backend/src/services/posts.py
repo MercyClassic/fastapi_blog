@@ -29,7 +29,7 @@ class PostService:
                     detail='Invalid image type',
                 )
         else:
-            data.pop('image')
+            data.pop('image', None)
 
     async def create_post(
         self,

@@ -89,7 +89,7 @@ async def edit_post(
     post_service: PostService = Depends(get_post_service),
     user_info: dict = Depends(get_current_user_info),
 ):
-    data = await post_service.edit_post(post_id, update_data.dict(), user_info)
+    data = await post_service.edit_post(post_id, update_data.dict(exclude_none=True), user_info)
     data = jsonable_encoder(
         parse_obj_as(PostReadBaseSchema, data),
     )

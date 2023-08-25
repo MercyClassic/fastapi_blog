@@ -23,14 +23,16 @@ const LoginForm = () => {
         if (response.status === 200) {
             localStorage.setItem('Authorization', response.data.access_token);
             alert('You successfully authorized!');
-//             navigate('/');
+            navigate('/');
         }
-        console.log(response);
     })
+
+    if (isLoading) {
+        return <Loader />
+    }
 
     return (
         <>
-        {isLoading && <Loader />}
         <div className={cl.loginFormContainer}>
             <form className={cl.loginForm}>
                 <label htmlFor='email'> Email: </label>

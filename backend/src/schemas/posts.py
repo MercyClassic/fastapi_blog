@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional, Union
 
-from fastapi import Form, UploadFile
+from fastapi import UploadFile
 from pydantic import BaseModel, Field, validator
 
 from schemas.base import CreatedAtBaseSchema
@@ -37,12 +37,20 @@ class PostBaseSchema(BaseModel):
 
 @as_form
 class PostCreateSchema(PostBaseSchema):
-    image: UploadFile | None | str = Form(None)
+    image: Union[UploadFile, str, None]
 
 
 @as_form
-class PostUpdateSchema(PostBaseSchema):
-    image: UploadFile | None | str = Form(None)
+class PostUpdateSchema(BaseModel):
+    image: Union[UploadFile, str, None]
+    title: Optional[str] = Field(min_length=1, max_length=50)
+    content: Optional[str] = Field(min_length=1, max_length=1000)
+    published: Optional[bool]
+
+    @validator('title', 'content')
+    def validate_title_and_content(cls, value):
+        if value:
+            return get_stripped_value(value)
 
 
 class PostReadBaseSchema(CreatedAtBaseSchema, PostBaseSchema):

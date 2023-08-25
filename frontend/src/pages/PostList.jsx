@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import useFetching from '../hooks/useFetching';
 import Loader from '../components/Loader/Loader';
 import PostService from '../API/PostService';
-import PostListItem from '../components/Post/PostListItem';
+import PostListItem from '../components/Post/List/PostListItem';
+import Header from '../components/Header/Header';
 
 
 const PostList = () => {
@@ -18,23 +19,30 @@ const PostList = () => {
         fetchPosts();
     }, [location.search])
 
+    if (isLoading) {
+        return <Loader />
+    }
+
     return(
         <>
-            {isLoading && <Loader /> && console.log(posts)}
+            <Header />
             {posts
-                ? <div className='centred-container__align-centred'>
-                    <div className='centred-container'>
-                        {posts.map((post) =>
-                            <PostListItem post={post} key={post.id}/>
-                        )}
+                ?
+                <div className='wrapper'>
+                    <div className='container'>
+                        <div className='post-list-container'>
+                            {posts.map((post) =>
+                                <PostListItem post={post} key={post.id}/>
+                            )}
+                        </div>
                     </div>
-                  </div>
-
-                : <div className='centred-container__align-centred'>
+                </div>
+                :
+                <div className='centred-container__align-centred'>
                     <div className='centred-container'>
                         No one post yet
                     </div>
-                  </div>
+                </div>
             }
         </>
     );

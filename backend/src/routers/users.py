@@ -48,7 +48,7 @@ async def get_user(
     )
 
 
-@router.post('/register')
+@router.post('')
 async def registration(
     user_data: UserCreateSchema,
     user_service: UserService = Depends(get_user_service),
