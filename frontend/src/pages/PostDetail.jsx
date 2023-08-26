@@ -4,6 +4,8 @@ import useFetching from '../hooks/useFetching';
 import PostService from '../API/PostService';
 import PostDetailItem from '../components/Post/Detail/PostDetailItem';
 import Loader from '../components/Loader/Loader';
+import Header from '../components/Header/Header';
+import Footer from '../components/Footer/Footer';
 
 
 const PostDetail = () => {
@@ -18,14 +20,19 @@ const PostDetail = () => {
         fetchPost()
     }, [])
 
+    if (isLoading) {
+        return <Loader />
+    }
+
     return(
         <>
-        {isLoading && <Loader />}
-        <div className='centred-container'>
-            <div className='centred-container__align-centred'>
-                <PostDetailItem post={post} />
+        <Header />
+            <div className='centred-container'>
+                <div className='centred-container__align-centred'>
+                    <PostDetailItem post={post} />
+                </div>
             </div>
-        </div>
+        <Footer />
         </>
     );
 }

@@ -1,0 +1,9 @@
+.userLink {
+    font-size: 40px;
+    transition: .7s;
+}
+
+.userLink:hover {
+    font-size: 50px;
+    color: #53D58E;
+}

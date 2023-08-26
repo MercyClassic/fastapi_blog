@@ -1,22 +1,58 @@
 .postContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    max-width: 1000px;
+    display: grid;
+    grid-template:
+    "imageContainer postContainer" 5fr
+    "tagListContainer tagListContainer" 1fr
+    / 1fr 2fr ;
     gap: 30px;
 }
 
 .imageContainer {
-    position: relative;
-    height: 500px;
-    width: 500px;
+    grid-area: imageContainer;
 }
 
 .imageContainer img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
     height: 100%;
+    width: 100%;
     object-fit: cover;
+}
+
+.postContentContainer {
+    grid-area: postContainer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-content: break-word;
+}
+
+.tagListContainer {
+    grid-area: tagListContainer;
+    display: flex;
+    gap: 20px;
+    overflow: auto;
+}
+
+.tag {
+    border: 3px solid teal;
+    border-radius: 5px;
+    height: fit-content;
+    width: fit-content;
+    padding: 5px;
+}
+
+.tagTitle {
+
+}
+
+.noImage {
+    width: 500px;
+    height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #B8DACF;
+    color: #7D8180;
+    border-radius: 50px;
 }

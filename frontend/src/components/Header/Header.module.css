@@ -4,7 +4,7 @@
 }
 
 .menu {
-    padding: 20px 10px;
+    padding: 20px 30px;
     display: flex;
     justify-content: flex-start;
     gap: 30px;
@@ -12,10 +12,11 @@
 
 .menuItem {
     color: #8EE9EC;
+    transition: .3s;
 }
 
 .menuItem:hover {
-    text-decoration: underline;
+    color: #53D58E;
 }
 
 .menuItem:last-child {
@@ -23,4 +24,8 @@
     margin-right: 30px;
     color: #E48080;
     cursor: pointer;
+}
+
+.menuItem:last-child:hover {
+    color: red;
 }

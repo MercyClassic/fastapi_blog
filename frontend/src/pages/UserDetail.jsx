@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import useFetching from '../hooks/useFetching';
 import UserService from '../API/UserService';
 import Loader from '../components/Loader/Loader';
+import Header from '../components/Header/Header';
+import Footer from '../components/Footer/Footer';
 
 
 const UserDetail = () => {
@@ -24,9 +26,11 @@ const UserDetail = () => {
 
     return(
         <>
-            <div>
-                {user.username}
-            </div>
+            <Header />
+                <div>
+                    {user.username}
+                </div>
+            <Footer />
         </>
     );
 }

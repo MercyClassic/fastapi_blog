@@ -3,6 +3,8 @@ import useFetching from '../hooks/useFetching';
 import UserService from '../API/UserService';
 import UserListItem from '../components/User/List/UserListItem';
 import Loader from '../components/Loader/Loader';
+import Header from '../components/Header/Header';
+import Footer from '../components/Footer/Footer';
 
 
 const UserList = () => {
@@ -22,12 +24,16 @@ const UserList = () => {
 
     return(
         <>
-            <div>
-                {users &&
-                    users.map((user) =>
-                        <UserListItem user={user} key={user.id}/>
-                )}
+        <Header />
+            <div className='centred-container__align-centred'>
+                <div className='centred-container'>
+                    {users &&
+                        users.map((user) =>
+                            <UserListItem user={user} key={user.id}/>
+                    )}
+                </div>
             </div>
+        <Footer />
         </>
     );
 }

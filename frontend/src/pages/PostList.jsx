@@ -5,6 +5,7 @@ import Loader from '../components/Loader/Loader';
 import PostService from '../API/PostService';
 import PostListItem from '../components/Post/List/PostListItem';
 import Header from '../components/Header/Header';
+import Footer from '../components/Footer/Footer';
 
 
 const PostList = () => {
@@ -26,7 +27,7 @@ const PostList = () => {
     return(
         <>
             <Header />
-            {posts
+            {posts.length
                 ?
                 <div className='wrapper'>
                     <div className='container'>
@@ -44,6 +45,7 @@ const PostList = () => {
                     </div>
                 </div>
             }
+            <Footer />
         </>
     );
 }

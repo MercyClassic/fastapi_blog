@@ -31,9 +31,6 @@ const Header = () => {
                 <li className={cl.menuItem} >
                     <Link to='/users'> All Users </Link>
                 </li>
-                <li className={cl.menuItem}>
-                    <Link to='/tags'> All tags </Link>
-                </li>
                 {isAuth
                     ?
                     <li className={cl.menuItem} onClick={(e) => logout(e)}>
