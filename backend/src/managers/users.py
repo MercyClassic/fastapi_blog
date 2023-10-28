@@ -5,7 +5,7 @@ from starlette import status
 from starlette.exceptions import HTTPException
 
 from auth.jwt import decode_jwt
-from config import JWT_ACCESS_SECRET_KEY
+from config import get_settings
 
 
 class UserManager:
@@ -13,7 +13,7 @@ class UserManager:
     def get_user_info_from_access_token(access_token: str) -> dict:
         access_token_data = decode_jwt(
             encoded_jwt=access_token,
-            secret=JWT_ACCESS_SECRET_KEY,
+            secret=get_settings().JWT_ACCESS_SECRET_KEY,
         )
         return {
             'user_id': int(access_token_data.get('sub')),
@@ -25,7 +25,7 @@ class UserManager:
         if len(value) < 4:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail='Length password must be >= 4',
+                detail='Length password must be over 4 symbols',
             )
         salt = os.urandom(32)
         password_hash = hashlib.pbkdf2_hmac(
@@ -48,6 +48,4 @@ class UserManager:
             100000,
         )
         user_input_full_hashed_password = f'{user_input_password_hash.hex()}{salt_from_db.hex()}'
-        if user_input_full_hashed_password == password_from_db:
-            return True
-        return False
+        return user_input_full_hashed_password == password_from_db

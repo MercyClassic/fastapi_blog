@@ -29,7 +29,8 @@ class PostBaseSchema(BaseModel):
 
     @validator('title', 'content')
     def validate_title_and_content(cls, value):
-        return get_stripped_value(value)
+        if value:
+            return get_stripped_value(value)
 
     class Config:
         orm_mode = True
@@ -60,4 +61,4 @@ class PostReadBaseSchema(CreatedAtBaseSchema, PostBaseSchema):
 
 class PostReadSchema(PostReadBaseSchema):
     user: UserReadBaseSchema
-    tags: List[TagReadSchema] | list
+    tags: List[TagReadSchema]

@@ -16,3 +16,19 @@ class AccountAlreadyActivated(HTTPException):
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Account Already Activated',
         )
+
+
+class AccountIsNotActive(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Account is not active',
+        )
+
+
+class InvalidCredentials(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail='Credentials are not valid',
+        )

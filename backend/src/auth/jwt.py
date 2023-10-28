@@ -4,7 +4,7 @@ import jwt
 from fastapi import HTTPException
 from starlette import status
 
-from config import ALGORITHM
+from config import get_settings
 
 
 def generate_jwt(
@@ -16,7 +16,7 @@ def generate_jwt(
     if lifetime_seconds:
         expires_delta = datetime.utcnow() + timedelta(seconds=lifetime_seconds)
         payload['exp'] = expires_delta
-    return jwt.encode(payload, secret, ALGORITHM)
+    return jwt.encode(payload, secret, get_settings().ALGORITHM)
 
 
 def decode_jwt(
@@ -28,7 +28,7 @@ def decode_jwt(
         decoded_token = jwt.decode(
             encoded_jwt,
             secret,
-            algorithms=[ALGORITHM],
+            algorithms=[get_settings().ALGORITHM],
             options={'verify_signature': False},
         )
     except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
@@ -7,10 +7,10 @@ from starlette import status
 from starlette.responses import JSONResponse
 
 from auth.auth import get_current_user_info
-from dependencies.tags import get_tag_service
-from schemas.posts import PostReadSchema, PostTagBaseSchema, PostTagReadSchema
+from schemas.posts import PostTagBaseSchema, PostTagReadSchema
 from schemas.tags import TagCreateSchema, TagReadSchema, TagUpdateSchema
-from services.tags import TagService
+from services.tags import TagServiceInterface
+from uow import UnitOfWorkInterface
 
 router = APIRouter(
     prefix='/api/v1/tags',
@@ -20,9 +20,10 @@ router = APIRouter(
 
 @router.get('')
 async def get_tags(
-    tag_service: TagService = Depends(get_tag_service),
+    tag_service: Annotated[TagServiceInterface, Depends()],
+    uow: Annotated[UnitOfWorkInterface, Depends()],
 ):
-    data = await tag_service.get_tags()
+    data = await tag_service.get_tags(uow)
     data = jsonable_encoder(
         parse_obj_as(List[TagReadSchema], data),
     )
@@ -35,10 +36,11 @@ async def get_tags(
 @router.post('')
 async def create_tag(
     tag: TagCreateSchema,
-    tag_service: TagService = Depends(get_tag_service),
-    user_info: dict = Depends(get_current_user_info),
+    tag_service: Annotated[TagServiceInterface, Depends()],
+    user_info: Annotated[dict, Depends(get_current_user_info)],
+    uow: Annotated[UnitOfWorkInterface, Depends()],
 ):
-    data = await tag_service.create_tag(tag.dict(), user_info)
+    data = await tag_service.create_tag(tag.dict(), user_info, uow)
     data = jsonable_encoder(
         parse_obj_as(TagReadSchema, data),
     )
@@ -51,10 +53,11 @@ async def create_tag(
 @router.delete('/{tag_id}')
 async def delete_tag(
     tag_id: int,
-    tag_service: TagService = Depends(get_tag_service),
-    user_info: dict = Depends(get_current_user_info),
+    tag_service: Annotated[TagServiceInterface, Depends()],
+    user_info: Annotated[dict, Depends(get_current_user_info)],
+    uow: Annotated[UnitOfWorkInterface, Depends()],
 ):
-    await tag_service.delete_tag(tag_id, user_info)
+    await tag_service.delete_tag(tag_id, user_info, uow)
     return JSONResponse(
         status_code=status.HTTP_204_NO_CONTENT,
         content=None,
@@ -65,10 +68,16 @@ async def delete_tag(
 async def edit_tag(
     tag_id: int,
     update_data: TagUpdateSchema,
-    tag_service: TagService = Depends(get_tag_service),
-    user_info: dict = Depends(get_current_user_info),
+    tag_service: Annotated[TagServiceInterface, Depends()],
+    user_info: Annotated[dict, Depends(get_current_user_info)],
+    uow: Annotated[UnitOfWorkInterface, Depends()],
 ):
-    data = await tag_service.edit_tag(tag_id, update_data.dict(), user_info)
+    data = await tag_service.edit_tag(
+        tag_id,
+        update_data.dict(),
+        user_info,
+        uow,
+    )
     data = jsonable_encoder(
         parse_obj_as(TagReadSchema, data),
     )
@@ -82,10 +91,16 @@ async def edit_tag(
 async def set_tag_on_post(
     post_id: int,
     data: PostTagBaseSchema,
-    tag_service: TagService = Depends(get_tag_service),
-    user_info: dict = Depends(get_current_user_info),
+    tag_service: Annotated[TagServiceInterface, Depends()],
+    user_info: Annotated[dict, Depends(get_current_user_info)],
+    uow: Annotated[UnitOfWorkInterface, Depends()],
 ):
-    data = await tag_service.set_tag_on_post(post_id, data.dict(), user_info)
+    data = await tag_service.set_tag_on_post(
+        post_id,
+        data.dict(),
+        user_info,
+        uow,
+    )
     data = jsonable_encoder(
         parse_obj_as(PostTagReadSchema, data),
     )
@@ -95,29 +110,20 @@ async def set_tag_on_post(
     )
 
 
-@router.get('/{tag_id}/posts/')
-async def get_posts_that_has_specify_tag(
-    tag_id: int,
-    tag_service: TagService = Depends(get_tag_service),
-):
-    data = await tag_service.get_posts_that_has_specify_tag(tag_id)
-    data = jsonable_encoder(
-        parse_obj_as(PostReadSchema, data),
-    )
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=data,
-    )
-
-
 @router.delete('/{tag_id}/posts/{post_id}')
 async def delete_tag_on_post(
     tag_id: int,
     post_id: int,
-    tag_service: TagService = Depends(get_tag_service),
-    user_info: dict = Depends(get_current_user_info),
+    tag_service: Annotated[TagServiceInterface, Depends()],
+    user_info: Annotated[dict, Depends(get_current_user_info)],
+    uow: Annotated[UnitOfWorkInterface, Depends()],
 ):
-    await tag_service.delete_tag_on_post(tag_id, post_id, user_info)
+    await tag_service.delete_tag_on_post(
+        tag_id,
+        post_id,
+        user_info,
+        uow,
+    )
     return JSONResponse(
         status_code=status.HTTP_204_NO_CONTENT,
         content=None,

@@ -1,19 +1,75 @@
-from typing import List
+from abc import ABC, abstractmethod
 
 from fastapi.exceptions import HTTPException
 from starlette import status
 from starlette.datastructures import UploadFile
 
 from exceptions.base import NotFound, PermissionDenied
-from models.posts import Post
-from repositories.posts import PostRepository
+from uow import UnitOfWorkInterface
 from utils.upload_image import upload_image
 
 
-class PostService:
-    def __init__(self, post_repo: PostRepository):
-        self.post_repo = post_repo
+class PostServiceInterface(ABC):
+    @staticmethod
+    @abstractmethod
+    async def update_data_image_attr(
+            data: dict,
+    ) -> None:
+        raise NotImplementedError
 
+    @abstractmethod
+    async def create_post(
+            self,
+            post: dict,
+            user_info: dict,
+            uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_user_posts(
+            self,
+            user_id: int,
+            uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_posts(
+            self,
+            uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_post(
+            self,
+            post_id: int,
+            uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def edit_post(
+            self,
+            post_id: int,
+            update_data: dict,
+            user_info: dict,
+            uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def delete_post(
+            self,
+            post_id: int,
+            user_info: dict,
+            uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+
+class PostService:
     @staticmethod
     async def update_data_image_attr(data: dict) -> None:
         image = data.get('image')
@@ -32,28 +88,42 @@ class PostService:
             data.pop('image', None)
 
     async def create_post(
-        self,
-        post: dict,
-        user_info: dict,
-    ) -> Post:
+            self,
+            post: dict,
+            user_info: dict,
+            uow: UnitOfWorkInterface,
+    ):
         await self.update_data_image_attr(post)
         post.setdefault('user_id', user_info.get('user_id'))
-        created_post = await self.post_repo.create_post(post)
+        async with uow:
+            created_post = await uow.post_repo.create_post(post)
+            await uow.commit()
         return created_post
 
-    async def get_user_posts(self, user_id: int) -> List[Post]:
-        posts = await self.post_repo.get_user_posts(user_id)
+    async def get_user_posts(
+            self,
+            user_id: int,
+            uow: UnitOfWorkInterface,
+    ):
+        async with uow:
+            posts = await uow.post_repo.get_user_posts(user_id)
         return posts
 
-    async def get_posts(self) -> List[Post]:
-        posts = await self.post_repo.get_posts()
+    async def get_posts(
+            self,
+            uow: UnitOfWorkInterface,
+    ):
+        async with uow:
+            posts = await uow.post_repo.get_posts()
         return posts
 
     async def get_post(
-        self,
-        post_id: int,
-    ) -> Post:
-        post = await self.post_repo.get_post(post_id)
+            self,
+            post_id: int,
+            uow: UnitOfWorkInterface,
+    ):
+        async with uow:
+            post = await uow.post_repo.get_post(post_id)
         if not post:
             raise NotFound
         return post
@@ -63,24 +133,30 @@ class PostService:
         post_id: int,
         update_data: dict,
         user_info: dict,
-    ) -> Post:
-        instance = await self.post_repo.return_author_id(post_id)
-        if not instance:
-            raise NotFound
-        if user_info.get('user_id') != instance.user_id:
-            raise PermissionDenied
-        await self.update_data_image_attr(update_data)
-        post = await self.post_repo.update_post(post_id, update_data)
+        uow: UnitOfWorkInterface,
+    ):
+        async with uow:
+            instance = await uow.post_repo.return_author_id(post_id)
+            if not instance:
+                raise NotFound
+            if user_info.get('user_id') != instance.user_id:
+                raise PermissionDenied
+            await self.update_data_image_attr(update_data)
+            post = await uow.post_repo.update_post(post_id, update_data)
+            await uow.commit()
         return post
 
     async def delete_post(
-        self,
-        post_id: int,
-        user_info: dict,
+            self,
+            post_id: int,
+            user_info: dict,
+            uow: UnitOfWorkInterface,
     ):
-        instance = await self.post_repo.return_author_id(post_id)
-        if not instance:
-            raise NotFound
-        if user_info.get('user_id') != instance.user_id:
-            raise PermissionDenied
-        await self.post_repo.delete_post(post_id)
+        async with uow:
+            instance = await uow.post_repo.return_author_id(post_id)
+            if not instance:
+                raise NotFound
+            if user_info.get('user_id') != instance.user_id:
+                raise PermissionDenied
+            await uow.post_repo.delete_post(post_id)
+            await uow.commit()

@@ -1,64 +1,113 @@
-from typing import List
+from abc import ABC, abstractmethod
 
 from fastapi import HTTPException
 from starlette import status
 
 from auth.jwt import decode_jwt, generate_jwt
-from config import IS_TEST, SECRET_TOKEN_FOR_EMAIL
+from config import get_settings
 from exceptions.base import NotFound
-from exceptions.users import InvalidToken
+from exceptions.users import (
+    InvalidToken,
+    AccountAlreadyActivated,
+    AccountIsNotActive,
+    InvalidCredentials,
+)
 from managers.users import UserManager
-from models.users import User
-from repositories.users import UserRepository
 from tasks.users import send_verify_email
+from uow import UnitOfWorkInterface
 
 
-class UserService:
-    def __init__(self, user_repo: UserRepository):
-        self.user_repo = user_repo
-
+class UserServiceInterface(ABC):
+    @abstractmethod
     async def authenticate(
         self,
+        uow: UnitOfWorkInterface,
         email: str,
         input_password: str,
     ) -> int:
-        user: User = await self.user_repo.get_info_for_authenticate(email)
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_users(
+        self,
+        user_info: dict,
+        uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_user(
+        self,
+        user_info: dict,
+        user_id: int,
+        uow: UnitOfWorkInterface,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def create_user(
+        self,
+        user_data: dict,
+        uow: UnitOfWorkInterface,
+    ) -> dict:
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def after_create(
+        user_data: dict,
+    ):
+        raise NotImplementedError
+
+    async def verify(
+        self,
+        token: str,
+        uow: UnitOfWorkInterface,
+    ) -> None:
+        raise NotImplementedError
+
+
+class UserService(UserServiceInterface):
+
+    async def authenticate(
+        self,
+        uow: UnitOfWorkInterface,
+        email: str,
+        input_password: str,
+    ) -> int:
+        async with uow:
+            user = await uow.user_repo.get_info_for_authenticate(email)
         if not user or not UserManager.check_password(
             input_password=input_password,
             password_from_db=user.password,
         ):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail='Credentials are not valid',
-            )
+            raise InvalidCredentials
         if not user.is_active or not user.is_verified:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail='Account is not active',
-            )
+            raise AccountIsNotActive
         return user.id
 
     async def get_users(
         self,
         user_info: dict,
-    ) -> List[User]:
-        fields = [User.id, User.email, User.username]
-        if user_info.get('is_superuser'):
-            fields += [User.registered_at, User.is_superuser, User.is_active, User.is_verified]
-
-        data = await self.user_repo.get_users(fields=fields)
+        uow: UnitOfWorkInterface,
+    ):
+        async with uow:
+            data = await uow.user_repo.get_users(
+                is_superuser=bool(user_info.get('is_superuser')),
+            )
         return data
 
     async def get_user(
         self,
         user_info: dict,
         user_id: int,
-    ) -> User:
-        fields = [User.id, User.email, User.username]
-        if user_info.get('is_superuser'):
-            fields += [User.registered_at, User.is_superuser, User.is_active, User.is_verified]
-
-        data = await self.user_repo.get_user(user_id, fields=fields)
+        uow: UnitOfWorkInterface,
+    ):
+        async with uow:
+            data = await uow.user_repo.get_user(
+                user_id,
+                is_superuser=bool(user_info.get('is_superuser')),
+            )
         if not data:
             raise NotFound
         return data
@@ -66,43 +115,54 @@ class UserService:
     async def create_user(
         self,
         user_data: dict,
+        uow: UnitOfWorkInterface,
     ) -> dict:
         user_data.pop('password1')
-        user = await self.user_repo.is_user_exists_by_email(user_data.get('email'))
-        if user:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail='User with this email already exists',
-            )
-        hashed_password = UserManager.make_password(user_data.pop('password2'))
-        user_id = await self.user_repo.create_user(user_data, hashed_password)
+        async with uow:
+            user = await uow.user_repo.is_user_exists_by_email(user_data.get('email'))
+            if user:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail='User with this email already exists',
+                )
+            hashed_password = UserManager.make_password(user_data.pop('password2'))
+            user_id = await uow.user_repo.create_user(user_data, hashed_password)
+            await uow.commit()
         user_data.update({'id': user_id})
         self.after_create(user_data)
         return user_data
 
     @staticmethod
-    def after_create(user_data: dict):
+    def after_create(
+        user_data: dict,
+    ):
         verify_token = generate_jwt(
             data=user_data,
             lifetime_seconds=60 * 60 * 24 * 3,
-            secret=SECRET_TOKEN_FOR_EMAIL,
+            secret=get_settings().SECRET_TOKEN_FOR_EMAIL,
         )
 
         """ FROM CONFIG, TO NOT SENDING EMAIL VERIFY WHEN TESTING """
-        if IS_TEST:
+        if get_settings().IS_TEST:
             return
 
         send_verify_email.delay(user_data.get('email'), verify_token)
 
-    async def verify(self, token: str) -> None:
+    async def verify(
+            self,
+            token: str,
+            uow: UnitOfWorkInterface,
+    ) -> None:
         verify_token = decode_jwt(
             encoded_jwt=token,
-            secret=SECRET_TOKEN_FOR_EMAIL,
+            secret=get_settings().SECRET_TOKEN_FOR_EMAIL,
         )
         email = verify_token.get('email')
-        user = await self.user_repo.get_user_by_email(email)
-        if user.id != verify_token.get('id'):
-            raise InvalidToken
-        if user.is_verified:
-            raise InvalidToken
-        await self.user_repo.update_user_verified_status(email)
+        async with uow:
+            user = await uow.user_repo.get_user_by_email(email)
+            if user.id != verify_token.get('id'):
+                raise InvalidToken
+            if user.is_verified:
+                raise AccountAlreadyActivated
+            await uow.user_repo.update_user_verified_status(email)
+            await uow.commit()
