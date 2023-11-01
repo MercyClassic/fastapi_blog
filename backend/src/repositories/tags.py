@@ -28,12 +28,7 @@ class TagRepository:
         return result.scalar_one()
 
     async def update_tag(self, tag_id: int, update_data: dict) -> Tag:
-        stmt = (
-            update(Tag)
-            .where(Tag.id == tag_id)
-            .values(**update_data)
-            .returning(Tag)
-        )
+        stmt = update(Tag).where(Tag.id == tag_id).values(**update_data).returning(Tag)
         result = await self.session.execute(stmt)
         await self.session.commit()
         return result.scalar_one()

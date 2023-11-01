@@ -13,58 +13,58 @@ class PostServiceInterface(ABC):
     @staticmethod
     @abstractmethod
     async def update_data_image_attr(
-            data: dict,
+        data: dict,
     ) -> None:
         raise NotImplementedError
 
     @abstractmethod
     async def create_post(
-            self,
-            post: dict,
-            user_info: dict,
-            uow: UnitOfWorkInterface,
+        self,
+        post: dict,
+        user_info: dict,
+        uow: UnitOfWorkInterface,
     ):
         raise NotImplementedError
 
     @abstractmethod
     async def get_user_posts(
-            self,
-            user_id: int,
-            uow: UnitOfWorkInterface,
+        self,
+        user_id: int,
+        uow: UnitOfWorkInterface,
     ):
         raise NotImplementedError
 
     @abstractmethod
     async def get_posts(
-            self,
-            uow: UnitOfWorkInterface,
+        self,
+        uow: UnitOfWorkInterface,
     ):
         raise NotImplementedError
 
     @abstractmethod
     async def get_post(
-            self,
-            post_id: int,
-            uow: UnitOfWorkInterface,
+        self,
+        post_id: int,
+        uow: UnitOfWorkInterface,
     ):
         raise NotImplementedError
 
     @abstractmethod
     async def edit_post(
-            self,
-            post_id: int,
-            update_data: dict,
-            user_info: dict,
-            uow: UnitOfWorkInterface,
+        self,
+        post_id: int,
+        update_data: dict,
+        user_info: dict,
+        uow: UnitOfWorkInterface,
     ):
         raise NotImplementedError
 
     @abstractmethod
     async def delete_post(
-            self,
-            post_id: int,
-            user_info: dict,
-            uow: UnitOfWorkInterface,
+        self,
+        post_id: int,
+        user_info: dict,
+        uow: UnitOfWorkInterface,
     ):
         raise NotImplementedError
 
@@ -88,10 +88,10 @@ class PostService:
             data.pop('image', None)
 
     async def create_post(
-            self,
-            post: dict,
-            user_info: dict,
-            uow: UnitOfWorkInterface,
+        self,
+        post: dict,
+        user_info: dict,
+        uow: UnitOfWorkInterface,
     ):
         await self.update_data_image_attr(post)
         post.setdefault('user_id', user_info.get('user_id'))
@@ -101,26 +101,26 @@ class PostService:
         return created_post
 
     async def get_user_posts(
-            self,
-            user_id: int,
-            uow: UnitOfWorkInterface,
+        self,
+        user_id: int,
+        uow: UnitOfWorkInterface,
     ):
         async with uow:
             posts = await uow.post_repo.get_user_posts(user_id)
         return posts
 
     async def get_posts(
-            self,
-            uow: UnitOfWorkInterface,
+        self,
+        uow: UnitOfWorkInterface,
     ):
         async with uow:
             posts = await uow.post_repo.get_posts()
         return posts
 
     async def get_post(
-            self,
-            post_id: int,
-            uow: UnitOfWorkInterface,
+        self,
+        post_id: int,
+        uow: UnitOfWorkInterface,
     ):
         async with uow:
             post = await uow.post_repo.get_post(post_id)
@@ -147,10 +147,10 @@ class PostService:
         return post
 
     async def delete_post(
-            self,
-            post_id: int,
-            user_info: dict,
-            uow: UnitOfWorkInterface,
+        self,
+        post_id: int,
+        user_info: dict,
+        uow: UnitOfWorkInterface,
     ):
         async with uow:
             instance = await uow.post_repo.return_author_id(post_id)

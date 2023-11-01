@@ -43,11 +43,7 @@ class UserRepository:
         fields = [User.id, User.email, User.username]
         if is_superuser:
             fields += [User.registered_at, User.is_superuser, User.is_active, User.is_verified]
-        query = (
-            select(User)
-            .where(User.id == user_id)
-            .options(load_only(*fields))
-        )
+        query = select(User).where(User.id == user_id).options(load_only(*fields))
         result = await self.session.execute(query)
         return result.scalar()
 
@@ -56,11 +52,7 @@ class UserRepository:
         user_data: dict,
         hashed_password: str,
     ) -> int:
-        stmt = (
-            insert(User)
-            .values(**user_data, password=hashed_password)
-            .returning(User.id)
-        )
+        stmt = insert(User).values(**user_data, password=hashed_password).returning(User.id)
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
@@ -80,9 +72,5 @@ class UserRepository:
         return user
 
     async def update_user_verified_status(self, email: str) -> None:
-        stmt = (
-            update(User)
-            .values(is_verified=True)
-            .where(User.email == email)
-        )
+        stmt = update(User).values(is_verified=True).where(User.email == email)
         await self.session.execute(stmt)

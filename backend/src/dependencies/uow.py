@@ -8,6 +8,6 @@ from uow import UnitOfWork
 
 
 async def get_uow(
-        session: Annotated[AsyncSession, Depends(get_session_stub)],
+    session: Annotated[AsyncSession, Depends(get_session_stub)],
 ) -> UnitOfWork:
     return UnitOfWork(session)

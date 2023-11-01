@@ -5,27 +5,23 @@ from typing import AsyncGenerator
 import pytest
 from dotenv import load_dotenv
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from db.database import Base, get_async_session
+from db.database import Base, get_session_stub
 from main import app
 
 load_dotenv()
 
-POSTGRES_USER_TEST = os.getenv('POSTGRES_USER_TEST')
-POSTGRES_PASSWORD_TEST = os.getenv('POSTGRES_PASSWORD_TEST')
-POSTGRES_HOST_TEST = os.getenv('POSTGRES_HOST_TEST')
-POSTGRES_DB_TEST = os.getenv('POSTGRES_DB_TEST')
-
-DATABASE_URL_TEST = (
-    f'postgresql+asyncpg://{POSTGRES_USER_TEST}:{POSTGRES_PASSWORD_TEST}@'
-    f'{POSTGRES_HOST_TEST}:5432/{POSTGRES_DB_TEST}'
+DATABASE_URL_TEST = 'postgresql+asyncpg://%s:%s@%s:5432/%s' % (
+    os.getenv('POSTGRES_USER_TEST'),
+    os.getenv('POSTGRES_PASSWORD_TEST'),
+    os.getenv('POSTGRES_HOST_TEST'),
+    os.getenv('POSTGRES_DB_TEST'),
 )
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
-async_session_maker = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
+async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 Base.metadata.bind = engine_test
 
 
@@ -34,7 +30,7 @@ async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-app.dependency_overrides[get_async_session] = override_get_async_session
+app.dependency_overrides[get_session_stub] = override_get_async_session
 
 
 @pytest.fixture(autouse=True, scope='module')

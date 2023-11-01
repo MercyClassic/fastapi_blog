@@ -1,4 +1,3 @@
-import copy
 from abc import ABC, abstractmethod
 
 from exceptions.base import NotFound, PermissionDenied
@@ -64,8 +63,8 @@ class TagServiceInterface(ABC):
 
 class TagService(TagServiceInterface):
     async def get_tags(
-            self,
-            uow: UnitOfWorkInterface,
+        self,
+        uow: UnitOfWorkInterface,
     ):
         async with uow:
             tags = await uow.tag_repo.get_tags()

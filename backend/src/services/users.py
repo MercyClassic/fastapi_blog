@@ -7,10 +7,10 @@ from auth.jwt import decode_jwt, generate_jwt
 from config import get_settings
 from exceptions.base import NotFound
 from exceptions.users import (
-    InvalidToken,
     AccountAlreadyActivated,
     AccountIsNotActive,
     InvalidCredentials,
+    InvalidToken,
 )
 from managers.users import UserManager
 from tasks.users import send_verify_email
@@ -68,7 +68,6 @@ class UserServiceInterface(ABC):
 
 
 class UserService(UserServiceInterface):
-
     async def authenticate(
         self,
         uow: UnitOfWorkInterface,
@@ -142,16 +141,12 @@ class UserService(UserServiceInterface):
             secret=get_settings().SECRET_TOKEN_FOR_EMAIL,
         )
 
-        """ FROM CONFIG, TO NOT SENDING EMAIL VERIFY WHEN TESTING """
-        if get_settings().IS_TEST:
-            return
-
         send_verify_email.delay(user_data.get('email'), verify_token)
 
     async def verify(
-            self,
-            token: str,
-            uow: UnitOfWorkInterface,
+        self,
+        token: str,
+        uow: UnitOfWorkInterface,
     ) -> None:
         verify_token = decode_jwt(
             encoded_jwt=token,

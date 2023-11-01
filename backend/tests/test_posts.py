@@ -11,13 +11,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count
 
 from auth.jwt import generate_jwt
-from config import JWT_ACCESS_SECRET_KEY
+from config import get_settings
 from main import app
 from managers.users import UserManager
 from models.posts import Post
 from models.users import User
 from repositories.posts import PostRepository
 from schemas.posts import PostReadSchema
+
+JWT_ACCESS_SECRET_KEY = get_settings().JWT_ACCESS_SECRET_KEY
 
 
 class TestPost:

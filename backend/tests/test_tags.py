@@ -9,13 +9,15 @@ from sqlalchemy import insert, select
 from sqlalchemy.sql.functions import count
 
 from auth.jwt import generate_jwt
-from config import JWT_ACCESS_SECRET_KEY
+from config import get_settings
 from main import app
 from managers.users import UserManager
 from models.posts import Post
 from models.tags import PostTag, Tag
 from models.users import User
 from schemas.posts import TagReadSchema
+
+JWT_ACCESS_SECRET_KEY = get_settings().JWT_ACCESS_SECRET_KEY
 
 
 class TestTag:

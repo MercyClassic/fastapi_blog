@@ -22,9 +22,6 @@ class Settings(BaseSettings):
 
     MEDIA_ROOT = 'media/images'
 
-    """ CHANGE TO TRUE WHEN RUN TESTS, TO TURN OFF CELERY """
-    IS_TEST: bool = True
-
     class Config:
         env_file = '.env', '../.env'
 

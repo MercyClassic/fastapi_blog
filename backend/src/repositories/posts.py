@@ -13,11 +13,7 @@ class PostRepository:
         self.session = session
 
     async def return_author_id(self, post_id: int):
-        query = (
-            select(Post)
-            .where(Post.id == post_id)
-            .options(load_only(Post.user_id))
-        )
+        query = select(Post).where(Post.id == post_id).options(load_only(Post.user_id))
         instance = await self.session.execute(query)
         return instance.scalar_one()
 
@@ -47,11 +43,7 @@ class PostRepository:
         return result.scalar_one()
 
     async def update_post(self, post_id: int, update_data: dict):
-        stmt = (
-            update(Post)
-            .where(Post.id == post_id)
-            .values(**update_data).returning(Post)
-        )
+        stmt = update(Post).where(Post.id == post_id).values(**update_data).returning(Post)
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
