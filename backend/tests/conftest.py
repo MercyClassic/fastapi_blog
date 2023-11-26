@@ -8,8 +8,8 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from db.database import Base, get_session_stub
-from main import app
+from infrastructure.db.database import Base, get_session_stub
+from main.main import app
 
 load_dotenv()
 

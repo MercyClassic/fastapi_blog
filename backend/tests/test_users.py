@@ -9,13 +9,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql.functions import count
 
-from auth.jwt import generate_jwt
-from config import get_settings
-from main import app
-from models.jwt import RefreshToken
-from models.users import User
-from schemas.users import UserReadBaseSchema
-from services.users import UserService
+from application.auth.jwt import generate_jwt
+from application.models.users import UserReadBaseSchema
+from domain.services.users import UserService
+from infrastructure.db.models.jwt import RefreshToken
+from infrastructure.db.models.users import User
+from main.config import get_settings
+from main.main import app
 
 JWT_ACCESS_SECRET_KEY = get_settings().JWT_ACCESS_SECRET_KEY
 SECRET_TOKEN_FOR_EMAIL = get_settings().SECRET_TOKEN_FOR_EMAIL

@@ -1,15 +1,14 @@
 [flake8]
 exclude =
     */venv/*
-    ./migrations/*
     *.git
     */__pycache__/*
     */__init__.py
-    src/db/base.py
+    */db/migrations/*
+    */db/base.py
     src/media
     src/logs
-    src/models/posts.py
-ignore = A003, VNE003, W503, E712, B010
+ignore = A003, VNE003, W503, B010
 extend-immutable-calls = Depends, fastapi.Depends, fastapi.params.Depends
 max-line-length=100
 max-cognitive-complexity=8
