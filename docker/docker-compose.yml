@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     healthcheck:
-      test: [ "CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}' || exit 1" ]
+      test: [ "CMD-SHELL", "sh -c 'pg_isready -d postgres' || exit 1" ]
       interval: 5s
       timeout: 10s
       retries: 10
@@ -25,8 +25,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+    ports:
+      - "8000:8000"
   nginx:
     image: nginx
     container_name: nginx
@@ -49,8 +49,9 @@ services:
     container_name: celery
     restart: always
     depends_on:
-      - redis
-    command: celery -A config worker -l info
+      redis:
+        condition: service_healthy
+    command: celery -A main.config worker -l info
     healthcheck:
       test: [ "CMD", "executable" ]
       interval: 30s
@@ -66,7 +67,7 @@ services:
       - celery
     ports:
       - "5555:5555"
-    command: celery -A config flower -l info
+    command: celery -A main.config flower -l info
   redis:
     container_name: redis
     hostname: redis
