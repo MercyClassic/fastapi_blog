@@ -1,9 +1,9 @@
 **<h1> FastAPI blog </h1>**
 **<h2> Description: </h2>**
 **<h3> Example of simple blog, that provides: </h3>**
+- **<h3> Clean Architecture </h3>**
 - **<h3> Async sqlalchemy </h3>**
 - **<h3> JWT Authorization </h3>**
-- **<h3> Users service </h3>**
 - **<h3> Verification user by email </h3>**
 - **<h3> CRUD Posts </h3>**
 - **<h3> CRUD Tags </h3>**
