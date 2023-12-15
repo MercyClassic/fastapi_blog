@@ -12,9 +12,9 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
-from infrastructure.db.database import Base, get_session_stub
-from main.config import get_settings
-from main.main import app
+from app.infrastructure.db.database import Base, get_session_stub
+from app.main.config import get_settings
+from app.main.main import app
 
 settings = get_settings()
 

@@ -7,14 +7,14 @@ from pydantic import parse_obj_as
 from sqlalchemy import insert, select
 from sqlalchemy.sql.functions import count
 
-from application.auth.jwt import generate_jwt
-from application.managers.users import UserManager
-from application.models.tags import TagReadSchema
-from infrastructure.db.models.posts import Post
-from infrastructure.db.models.tags import PostTag, Tag
-from infrastructure.db.models.users import User
-from main.config import get_settings
-from main.main import app
+from app.application.auth.jwt import generate_jwt
+from app.application.models.tags import TagReadSchema
+from app.domain.managers.users import UserManager
+from app.infrastructure.db.models.posts import Post
+from app.infrastructure.db.models.tags import PostTag, Tag
+from app.infrastructure.db.models.users import User
+from app.main.config import get_settings
+from app.main.main import app
 from tests.conftest import async_session_maker
 
 JWT_ACCESS_SECRET_KEY = get_settings().JWT_ACCESS_SECRET_KEY

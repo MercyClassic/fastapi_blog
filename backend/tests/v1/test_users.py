@@ -8,13 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql.functions import count
 
-from application.auth.jwt import generate_jwt
-from application.models.users import UserReadBaseSchema
-from domain.services.users import UserService
-from infrastructure.db.models.jwt import RefreshToken
-from infrastructure.db.models.users import User
-from main.config import get_settings
-from main.main import app
+from app.application.auth.jwt import generate_jwt
+from app.application.models.users import UserReadBaseSchema
+from app.domain.services.users import UserService
+from app.infrastructure.db.models.jwt import RefreshToken
+from app.infrastructure.db.models.users import User
+from app.main.config import get_settings
+from app.main.main import app
 from tests.conftest import async_session_maker
 
 JWT_ACCESS_SECRET_KEY = get_settings().JWT_ACCESS_SECRET_KEY
