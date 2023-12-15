@@ -4,23 +4,16 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from infrastructure.db.base import Base
-from main.config import Settings, get_settings
+from main.config import get_settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
 
-def get_database_url(settings: Settings) -> str:
-    return 'postgresql+asyncpg://%s:%s@%s:5432/%s?async_fallback=True' % (
-        settings.POSTGRES_USER,
-        settings.POSTGRES_PASSWORD,
-        settings.POSTGRES_HOST,
-        settings.POSTGRES_DB,
-    )
+database_url = '%s?async_fallback=True' % get_settings().db_uri
 
-
-config.set_main_option('sqlalchemy.url', get_database_url(get_settings()))
+config.set_main_option('sqlalchemy.url', database_url)
 section = config.config_ini_section
 
 

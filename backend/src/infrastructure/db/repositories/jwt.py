@@ -1,7 +1,7 @@
 from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import load_only
 
-from infrastructure.db.interfaces.jwt import JWTRepositoryInterface
+from infrastructure.db.interfaces.repositories.jwt import JWTRepositoryInterface
 from infrastructure.db.models.jwt import RefreshToken
 from infrastructure.db.models.users import User
 

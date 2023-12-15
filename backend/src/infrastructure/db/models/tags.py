@@ -1,10 +1,14 @@
 from datetime import datetime
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infrastructure.db.database import Base
+
+if TYPE_CHECKING:
+    from infrastructure.db.models.posts import Post
+    from infrastructure.db.models.users import User
 
 
 class Tag(Base):
@@ -15,9 +19,8 @@ class Tag(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.utcnow)
 
-    user = relationship('User', back_populates='tags')
-    posts: Mapped[List['PostTag']] = relationship(
-        'Post',
+    user: Mapped['User'] = relationship(back_populates='tags')
+    posts: Mapped[List['Post']] = relationship(
         secondary='post_tag',
         back_populates='tags',
     )

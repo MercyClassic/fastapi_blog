@@ -12,7 +12,8 @@
 **<h2>Stack of this project:</h2>**
 - **<h3> Python 3.11.4 </h3>**
 - **<h3> FastAPI 0.97.0 </h3>**
-- **<h3> SQLAlchemy 2.0.16 </h3>**
+- **<h3> Pydantic V1 </h3>**
+- **<h3> SQLAlchemy 2.0 </h3>**
 - **<h3> PostgreSQL </h3>**
 - **<h3> Celery </h3>**
 - **<h3> Redis </h3>**

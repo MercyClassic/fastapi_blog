@@ -52,7 +52,10 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def unexpected_error_log(request, ex):
     logger.error(ex)
-    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=None)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=None,
+    )
 
 
 app.include_router(root_router)

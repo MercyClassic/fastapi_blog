@@ -21,7 +21,7 @@ from main.di.dependencies.users import get_user_service
 
 
 def init_dependencies(app: FastAPI, settings: Settings) -> None:
-    async_session_maker = create_async_session_maker(settings)
+    async_session_maker = create_async_session_maker(settings.db_uri)
 
     app.dependency_overrides[get_session_stub] = partial(
         get_async_session,

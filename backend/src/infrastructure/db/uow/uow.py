@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.db.interfaces.uow import UnitOfWorkInterface
+from infrastructure.db.interfaces.repositories.uow import UnitOfWorkInterface
 from infrastructure.db.repositories.jwt import JWTRepository
 from infrastructure.db.repositories.posts import PostRepository
 from infrastructure.db.repositories.tags import TagRepository

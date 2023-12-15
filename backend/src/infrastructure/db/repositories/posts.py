@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.orm import joinedload, load_only
 
-from infrastructure.db.interfaces.posts import PostRepositoryInterface
+from infrastructure.db.interfaces.repositories.posts import PostRepositoryInterface
 from infrastructure.db.models.posts import Post
 from infrastructure.db.models.tags import Tag
 from infrastructure.db.models.users import User

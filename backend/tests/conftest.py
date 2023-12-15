@@ -1,44 +1,54 @@
 import asyncio
-import os
+from functools import partial
 from typing import AsyncGenerator
 
 import pytest
-from dotenv import load_dotenv
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.pool import NullPool
 
 from infrastructure.db.database import Base, get_session_stub
+from main.config import get_settings
 from main.main import app
 
-load_dotenv()
+settings = get_settings()
 
-DATABASE_URL_TEST = 'postgresql+asyncpg://%s:%s@%s:5432/%s' % (
-    os.getenv('POSTGRES_USER_TEST'),
-    os.getenv('POSTGRES_PASSWORD_TEST'),
-    os.getenv('POSTGRES_HOST_TEST'),
-    os.getenv('POSTGRES_DB_TEST'),
-)
-
-engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
-async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
-Base.metadata.bind = engine_test
+test_engine = create_async_engine(settings.test_db_uri, poolclass=NullPool)
+Base.metadata.bind = test_engine
 
 
-async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
+def create_test_async_session_maker(test_engine: AsyncEngine) -> async_sessionmaker:
+    return async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+
+
+async def get_test_async_session(test_async_session_maker: async_sessionmaker) -> AsyncGenerator:
+    async with test_async_session_maker() as session:
         yield session
 
 
-app.dependency_overrides[get_session_stub] = override_get_async_session
+async_session_maker = create_test_async_session_maker(test_engine)
+
+app.dependency_overrides[get_session_stub] = partial(
+    get_test_async_session,
+    async_session_maker,
+)
 
 
 @pytest.fixture(autouse=True, scope='module')
 async def prepare_database():
-    async with engine_test.begin() as conn:
+    async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
-    async with engine_test.begin() as conn:
+    async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
 

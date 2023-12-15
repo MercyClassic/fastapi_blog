@@ -8,6 +8,7 @@ from infrastructure.db.database import Base
 
 if TYPE_CHECKING:
     from infrastructure.db.models.tags import Tag
+    from infrastructure.db.models.users import User
 
 
 class Post(Base):
@@ -20,7 +21,7 @@ class Post(Base):
     image: Mapped[str] = mapped_column(String(150), nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.utcnow)
     published: Mapped[bool] = mapped_column(Boolean, default=True)
-    user = relationship('User', back_populates='posts')
+    user: Mapped['User'] = relationship(back_populates='posts')
     tags: Mapped[List['Tag']] = relationship(
         'Tag',
         secondary='post_tag',
