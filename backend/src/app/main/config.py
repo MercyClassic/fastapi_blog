@@ -1,68 +1,57 @@
+import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from celery import Celery
-from pydantic import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
-class Settings(BaseSettings):
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_HOST: str
-    POSTGRES_DB: str
+class ConfigParseError(ValueError):
+    pass
 
-    POSTGRES_USER_TEST: str
-    POSTGRES_PASSWORD_TEST: str
-    POSTGRES_HOST_TEST: str
-    POSTGRES_DB_TEST: str
 
-    JWT_ACCESS_SECRET_KEY: str = 'JWT'
-    JWT_REFRESH_SECRET_KEY: str = 'JWT'
-    SECRET_TOKEN_FOR_EMAIL: str = 'JWT'
-    ALGORITHM: str = 'HS256'
+@dataclass
+class Config:
+    JWT_ACCESS_SECRET_KEY: str
+    JWT_REFRESH_SECRET_KEY: str
+    ALGORITHM: str
 
-    EMAIl_HOST: str
-    EMAIL_HOST_PASSWORD: str
+    SECRET_TOKEN_FOR_EMAIL: str
 
     REDIS_HOST: str = 'localhost'
 
     ROOT_DIR = '%s' % Path(__file__).parent.parent
-    MEDIA_ROOT = 'media/images'
+    MEDIA_DIR = 'media/images/'
 
     @property
-    def db_uri(self) -> str:
-        return 'postgresql+asyncpg://%s:%s@%s:5432/%s' % (
-            self.POSTGRES_USER,
-            self.POSTGRES_PASSWORD,
-            self.POSTGRES_HOST,
-            self.POSTGRES_DB,
-        )
-
-    @property
-    def test_db_uri(self) -> str:
-        return 'postgresql+asyncpg://%s:%s@%s:5432/%s' % (
-            self.POSTGRES_USER_TEST,
-            self.POSTGRES_PASSWORD_TEST,
-            self.POSTGRES_HOST_TEST,
-            self.POSTGRES_DB_TEST,
-        )
-
-    class Config:
-        env_file = '.env', '../.env'
-
-
-def get_settings() -> Settings:
-    return Settings()
+    def media_dir(self) -> str:
+        return '%s/%s' % (self.ROOT_DIR, self.MEDIA_DIR)
 
 
 celery_app = Celery(
     'blog',
-    broker=f'redis://{get_settings().REDIS_HOST}:6379/0',
+    broker=f'redis://{Config.REDIS_HOST}:6379/0',
 )
 celery_app.autodiscover_tasks(
-    [
-        f'app.domain.tasks.{module}'
-        for module in os.listdir(f'{get_settings().ROOT_DIR}/domain/tasks')
-    ],
+    [f'app.domain.tasks.{module}' for module in os.listdir(f'{Config.ROOT_DIR}/domain/tasks')],
     force=True,
 )
+
+
+def get_str_env(key: str) -> str:
+    value = os.getenv(key)
+    if not value:
+        logger.error(f'{key} is not set')
+        raise ConfigParseError(f'{key} is not set')
+    return value
+
+
+def load_config():
+    return Config(
+        JWT_ACCESS_SECRET_KEY=get_str_env('JWT_ACCESS_SECRET_KEY'),
+        JWT_REFRESH_SECRET_KEY=get_str_env('JWT_REFRESH_SECRET_KEY'),
+        ALGORITHM=get_str_env('ALGORITHM'),
+        SECRET_TOKEN_FOR_EMAIL=get_str_env('SECRET_TOKEN_FOR_EMAIL'),
+    )

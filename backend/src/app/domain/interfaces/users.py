@@ -32,13 +32,18 @@ class UserServiceInterface(ABC):
     ) -> dict:
         raise NotImplementedError
 
-    @staticmethod
+
+class SendVerifyMessageServiceInterface(ABC):
     @abstractmethod
-    def after_create(
+    def send_verify_message(
+        self,
         user_data: dict,
     ):
         raise NotImplementedError
 
+
+class UserVerifyServiceInterface(ABC):
+    @abstractmethod
     async def verify(
         self,
         token: str,

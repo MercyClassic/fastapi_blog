@@ -1,4 +1,4 @@
-from app.application.auth.jwt import decode_jwt, generate_jwt
+from app.application.interfaces.encoders.jwt import JWTEncoderInterface
 from app.domain.interfaces.jwt import JWTServiceInterface
 from app.infrastructure.db.uow import UnitOfWorkInterface
 
@@ -6,10 +6,12 @@ from app.infrastructure.db.uow import UnitOfWorkInterface
 class JWTService(JWTServiceInterface):
     def __init__(
         self,
+        jwt_encoder: JWTEncoderInterface,
         jwt_access_key: str,
         jwt_refresh_key: str,
         uow: UnitOfWorkInterface,
     ):
+        self.jwt_encoder = jwt_encoder
         self.jwt_access_key = jwt_access_key
         self.jwt_refresh_key = jwt_refresh_key
         self.uow = uow
@@ -36,7 +38,7 @@ class JWTService(JWTServiceInterface):
         user_id: int,
     ) -> str:
         to_encode = {'sub': str(user_id)}
-        encoded_jwt = generate_jwt(
+        encoded_jwt = self.jwt_encoder.generate_jwt(
             data=to_encode,
             lifetime_seconds=60 * 60 * 24 * 7,
             secret=self.jwt_refresh_key,
@@ -49,7 +51,7 @@ class JWTService(JWTServiceInterface):
         is_superuser: bool,
     ) -> str:
         to_encode = {'sub': str(user_id), 'is_superuser': is_superuser}
-        return generate_jwt(
+        return self.jwt_encoder.generate_jwt(
             data=to_encode,
             lifetime_seconds=60 * 60,
             secret=self.jwt_access_key,
@@ -59,7 +61,7 @@ class JWTService(JWTServiceInterface):
         self,
         refresh_token: str,
     ):
-        refresh_token_data = decode_jwt(
+        refresh_token_data = self.jwt_encoder.decode_jwt(
             encoded_jwt=refresh_token,
             secret=self.jwt_refresh_key,
         )
@@ -71,7 +73,7 @@ class JWTService(JWTServiceInterface):
         self,
         refresh_token: str,
     ) -> None:
-        refresh_token_data = decode_jwt(
+        refresh_token_data = self.jwt_encoder.decode_jwt(
             encoded_jwt=refresh_token,
             secret=self.jwt_refresh_key,
             soft=True,

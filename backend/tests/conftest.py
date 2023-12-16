@@ -1,4 +1,5 @@
 import asyncio
+import os
 from functools import partial
 from typing import AsyncGenerator
 
@@ -12,13 +13,11 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
+from app.domain.interfaces.users import SendVerifyMessageServiceInterface
 from app.infrastructure.db.database import Base, get_session_stub
-from app.main.config import get_settings
 from app.main.main import app
 
-settings = get_settings()
-
-test_engine = create_async_engine(settings.test_db_uri, poolclass=NullPool)
+test_engine = create_async_engine(os.environ['test_db_uri'], poolclass=NullPool)
 Base.metadata.bind = test_engine
 
 
@@ -41,6 +40,18 @@ app.dependency_overrides[get_session_stub] = partial(
     get_test_async_session,
     async_session_maker,
 )
+
+
+class SendVerifyMessageServiceOverride(SendVerifyMessageServiceInterface):
+    def send_verify_message(self, user_data: dict):
+        pass
+
+
+def get_test_send_verify_message_service():
+    return SendVerifyMessageServiceOverride()
+
+
+app.dependency_overrides[SendVerifyMessageServiceInterface] = get_test_send_verify_message_service
 
 
 @pytest.fixture(autouse=True, scope='module')

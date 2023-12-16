@@ -1,7 +1,7 @@
 from starlette.datastructures import UploadFile
 
 from app.domain.exceptions.base import NotFound, PermissionDenied
-from app.domain.exceptions.users import InvalidImageType
+from app.domain.exceptions.images import InvalidImageType
 from app.domain.interfaces.posts import PostServiceInterface
 from app.domain.utils.upload_image import upload_image
 from app.infrastructure.db.uow import UnitOfWorkInterface

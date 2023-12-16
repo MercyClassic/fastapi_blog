@@ -6,10 +6,10 @@ from pydantic import parse_obj_as
 from starlette import status
 from starlette.responses import JSONResponse
 
-from app.application.auth.auth import get_current_user_info
 from app.application.models.posts import PostTagBaseSchema, PostTagReadSchema
 from app.application.models.tags import TagCreateSchema, TagReadSchema, TagUpdateSchema
 from app.domain.services.tags import TagServiceInterface
+from app.main.di.dependencies.auth import get_current_user_info
 
 router = APIRouter(
     prefix='/tags',

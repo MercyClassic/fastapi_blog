@@ -1,4 +1,4 @@
-from app.application.auth.jwt import decode_jwt, generate_jwt
+from app.application.interfaces.encoders.jwt import JWTEncoderInterface
 from app.domain.exceptions.base import NotFound
 from app.domain.exceptions.users import (
     AccountAlreadyActivated,
@@ -7,11 +7,14 @@ from app.domain.exceptions.users import (
     InvalidToken,
     UserAlreadyExists,
 )
-from app.domain.interfaces.users import UserServiceInterface
+from app.domain.interfaces.users import (
+    SendVerifyMessageServiceInterface,
+    UserServiceInterface,
+    UserVerifyServiceInterface,
+)
 from app.domain.managers.users import UserManager
 from app.domain.tasks.users import send_verify_email
 from app.infrastructure.db.uow import UnitOfWorkInterface
-from app.main.config import get_settings
 
 
 class UserService(UserServiceInterface):
@@ -70,32 +73,53 @@ class UserService(UserServiceInterface):
         user_id = await self.uow.user_repo.create_user(user_data, hashed_password)
         await self.uow.commit()
         user_data.update({'id': user_id})
-        self.after_create(user_data)
         return user_data
 
-    @staticmethod
-    def after_create(
+
+class SendVerifyMessageService(SendVerifyMessageServiceInterface):
+    def __init__(
+        self,
+        jwt_encoder: JWTEncoderInterface,
+        secret_token_for_email: str,
+    ):
+        self.jwt_encoder = jwt_encoder
+        self.secret_token_for_email = secret_token_for_email
+
+    def send_verify_message(
+        self,
         user_data: dict,
     ):
-        verify_token = generate_jwt(
+        verify_token = self.jwt_encoder.generate_jwt(
             data=user_data,
             lifetime_seconds=60 * 60 * 24 * 3,
-            secret=get_settings().SECRET_TOKEN_FOR_EMAIL,
+            secret=self.secret_token_for_email,
         )
 
         send_verify_email.delay(user_data.get('email'), verify_token)
+
+
+class UserVerifyService(UserVerifyServiceInterface):
+    def __init__(
+        self,
+        uow: UnitOfWorkInterface,
+        jwt_encoder: JWTEncoderInterface,
+        secret_token_for_email: str,
+    ):
+        self.uow = uow
+        self.jwt_encoder = jwt_encoder
+        self.secret_token_for_email = secret_token_for_email
 
     async def verify(
         self,
         token: str,
     ) -> None:
-        verify_token = decode_jwt(
+        verify_data = self.jwt_encoder.decode_jwt(
             encoded_jwt=token,
-            secret=get_settings().SECRET_TOKEN_FOR_EMAIL,
+            secret=self.secret_token_for_email,
         )
-        email = verify_token.get('email')
+        email = verify_data.get('email')
         user = await self.uow.user_repo.get_user_by_email(email)
-        if user.id != verify_token.get('id'):
+        if user.id != verify_data.get('id'):
             raise InvalidToken
         if user.is_verified:
             raise AccountAlreadyActivated

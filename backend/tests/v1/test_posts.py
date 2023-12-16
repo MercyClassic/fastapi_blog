@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import pytest
@@ -9,17 +10,17 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count
 
-from app.application.auth.jwt import generate_jwt
+from app.application.auth.encoders.jwt import JWTEncoder
 from app.application.models.posts import PostReadSchema
 from app.domain.managers.users import UserManager
 from app.infrastructure.db.models.posts import Post
 from app.infrastructure.db.models.users import User
 from app.infrastructure.db.repositories.posts import PostRepository
-from app.main.config import get_settings
 from app.main.main import app
 from tests.conftest import async_session_maker
 
-JWT_ACCESS_SECRET_KEY = get_settings().JWT_ACCESS_SECRET_KEY
+JWT_ACCESS_SECRET_KEY = os.environ['JWT_ACCESS_SECRET_KEY']
+jwt_encoder = JWTEncoder(os.environ['ALGORITHM'])
 
 
 class TestPost:
@@ -39,7 +40,7 @@ class TestPost:
                 await session.execute(stmt)
 
             await session.commit()
-            client.headers['Authorization'] = generate_jwt(
+            client.headers['Authorization'] = jwt_encoder.generate_jwt(
                 data={'sub': 1},
                 secret=JWT_ACCESS_SECRET_KEY,
                 lifetime_seconds=60,
@@ -49,13 +50,13 @@ class TestPost:
     async def set_current_access_token(client: AsyncClient, by_author: bool):
         """USER WITH ID = 1 IS AUTHOR"""
         if by_author:
-            client.headers['Authorization'] = generate_jwt(
+            client.headers['Authorization'] = jwt_encoder.generate_jwt(
                 data={'sub': 1},
                 secret=JWT_ACCESS_SECRET_KEY,
                 lifetime_seconds=60,
             )
         else:
-            client.headers['Authorization'] = generate_jwt(
+            client.headers['Authorization'] = jwt_encoder.generate_jwt(
                 data={'sub': 2},
                 secret=JWT_ACCESS_SECRET_KEY,
                 lifetime_seconds=60,

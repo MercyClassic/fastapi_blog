@@ -6,7 +6,6 @@ from pydantic import parse_obj_as
 from starlette import status
 from starlette.responses import JSONResponse
 
-from app.application.auth.auth import get_current_user_info
 from app.application.models.posts import (
     PostCreateSchema,
     PostReadBaseSchema,
@@ -14,6 +13,7 @@ from app.application.models.posts import (
     PostUpdateSchema,
 )
 from app.domain.services.posts import PostServiceInterface
+from app.main.di.dependencies.auth import get_current_user_info
 
 router = APIRouter(
     prefix='/posts',

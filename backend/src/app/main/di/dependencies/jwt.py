@@ -1,23 +1,31 @@
 from typing import Annotated
 
 from fastapi import Depends
-from starlette.requests import Request
 
+from app.application.auth.encoders.jwt import JWTEncoder
+from app.application.interfaces.encoders.jwt import JWTEncoderInterface
 from app.domain.services.jwt import JWTService
-from app.infrastructure.db.uow import UnitOfWorkInterface
-from app.main.config import get_settings
+from app.infrastructure.db.interfaces.repositories.uow import UnitOfWorkInterface
+from app.main.config import Config
+from app.main.di.stub import Stub
 
 
 def get_jwt_service(
     uow: Annotated[UnitOfWorkInterface, Depends()],
-    settings: Annotated[get_settings, Depends()],
+    jwt_encoder: Annotated[JWTEncoderInterface, Depends()],
+    settings: Annotated[Config, Depends(Stub(Config))],
 ) -> JWTService:
     return JWTService(
+        jwt_encoder,
         settings.JWT_ACCESS_SECRET_KEY,
         settings.JWT_REFRESH_SECRET_KEY,
         uow,
     )
 
 
-async def get_access_token_from_headers(request: Request) -> str:
-    return request.headers.get('Authorization')
+def get_jwt_encoder(
+    config: Annotated[Config, Depends(Stub(Config))],
+):
+    return JWTEncoder(
+        config.ALGORITHM,
+    )

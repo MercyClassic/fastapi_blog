@@ -9,21 +9,19 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.domain.exceptions.base import DomainException, NotFound, PermissionDenied
+from app.domain.exceptions.images import InvalidImageType
 from app.domain.exceptions.users import (
     AccountAlreadyActivated,
     AccountIsNotActive,
     InvalidCredentials,
-    InvalidImageType,
     InvalidToken,
     PasswordTooShort,
     UserAlreadyExists,
 )
-from app.main.config import get_settings
-
-settings = get_settings()
+from app.main.config import Config
 
 logger.add(
-    f'{settings.ROOT_DIR}/logs/errors.log',
+    f'{Config.ROOT_DIR}/logs/errors.log',
     format='{time} - {level} - {message}',
     level='ERROR',
     rotation='1 month',

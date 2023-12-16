@@ -21,9 +21,5 @@ class InvalidCredentials(DomainException):
     pass
 
 
-class InvalidImageType(DomainException):
-    pass
-
-
 class PasswordTooShort(DomainException):
     pass

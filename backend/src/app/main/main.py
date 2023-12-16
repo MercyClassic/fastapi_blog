@@ -1,25 +1,24 @@
+import os
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.main.config import get_settings
 from app.main.di.init_dependencies import init_dependencies
-from app.main.di.setup_exception_handlers import setup_exception_handlers
+from app.main.exceptions.setup_exception_handlers import setup_exception_handlers
 from app.presentators.api.routers.root import root_router
-
-settings = get_settings()
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
         title='First fastapi blog',
     )
-    init_dependencies(app, settings)
+    init_dependencies(app, os.environ['db_uri'])
+    app.include_router(root_router)
+    setup_exception_handlers(app)
     return app
 
 
 app = create_app()
-
-setup_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,5 +36,3 @@ app.add_middleware(
         'X-CSRFToken',
     ],
 )
-
-app.include_router(root_router)

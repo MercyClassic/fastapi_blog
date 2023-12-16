@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import pytest
@@ -8,21 +9,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql.functions import count
 
-from app.application.auth.jwt import generate_jwt
+from app.application.auth.encoders.jwt import JWTEncoder
 from app.application.models.users import UserReadBaseSchema
-from app.domain.services.users import UserService
 from app.infrastructure.db.models.jwt import RefreshToken
 from app.infrastructure.db.models.users import User
-from app.main.config import get_settings
 from app.main.main import app
 from tests.conftest import async_session_maker
 
-JWT_ACCESS_SECRET_KEY = get_settings().JWT_ACCESS_SECRET_KEY
-SECRET_TOKEN_FOR_EMAIL = get_settings().SECRET_TOKEN_FOR_EMAIL
-
-
-def mock_after_create(*args, **kwargs):
-    pass
+JWT_ACCESS_SECRET_KEY = os.environ['JWT_ACCESS_SECRET_KEY']
+jwt_encoder = JWTEncoder(os.environ['ALGORITHM'])
+SECRET_TOKEN_FOR_EMAIL = os.environ['SECRET_TOKEN_FOR_EMAIL']
 
 
 class TestUser:
@@ -44,7 +40,6 @@ class TestUser:
         status_code: int,
         result_count: int,
     ):
-        UserService.after_create = mock_after_create
         response = await client.post(
             url=app.url_path_for('registration'),
             json={
@@ -77,7 +72,7 @@ class TestUser:
 
     @staticmethod
     def create_verify_token():
-        verify_token = generate_jwt(
+        verify_token = jwt_encoder.generate_jwt(
             data={'id': 1, 'email': 'test@test.ru'},
             lifetime_seconds=60 * 60 * 24 * 3,
             secret=SECRET_TOKEN_FOR_EMAIL,
@@ -139,7 +134,7 @@ class TestUser:
 
     @staticmethod
     async def set_access_token(client: AsyncClient):
-        client.headers['Authorization'] = generate_jwt(
+        client.headers['Authorization'] = jwt_encoder.generate_jwt(
             data={'sub': 1},
             secret=JWT_ACCESS_SECRET_KEY,
             lifetime_seconds=60,
